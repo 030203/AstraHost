@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #342821;
+  background: #fcfaf8;
+  font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(201, 133, 107, 0.16), transparent 24%),
+    radial-gradient(circle at top right, rgba(145, 165, 129, 0.12), transparent 20%),
+    radial-gradient(circle at bottom left, rgba(214, 189, 165, 0.12), transparent 24%),
+    linear-gradient(180deg, #fcfaf8 0%, #f6f0ea 100%);
+  overscroll-behavior: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.copilot-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cfbfb3 transparent;
+}
+
+.copilot-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.copilot-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cfbfb3;
+}
+
+.copilot-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.markdown-body {
+  color: #342821;
+  font-size: 14px;
+  line-height: 1.72;
+}
+
+.markdown-body > :first-child {
+  margin-top: 0;
+}
+
+.markdown-body > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body p,
+.markdown-body ul,
+.markdown-body ol,
+.markdown-body blockquote,
+.markdown-body pre,
+.markdown-body table {
+  margin: 0.5rem 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 1.25rem;
+}
+
+.markdown-body code {
+  border-radius: 8px;
+  border: 1px solid #e2d6cc;
+  background: #fff8f2;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.9em;
+}
+
+.markdown-body pre {
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid #e2d6cc;
+  background: #fff8f2;
+  padding: 0.875rem 1rem;
+}
+
+.markdown-body pre code {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.markdown-body blockquote {
+  border-left: 3px solid #c9856b;
+  background: #f6e8df;
+  border-radius: 0 12px 12px 0;
+  padding: 0.6rem 0.9rem;
+}
+
+.markdown-body a {
+  color: #8b5e4f;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.result-rail-shell {
+  margin-left: 0;
+}
+
+@media (min-width: 640px) {
+  .result-rail-shell {
+    margin-left: 3.25rem;
+  }
+}

@@ -1,146 +1,156 @@
 <template>
   <div class="property-detail">
-    <el-page-header :content="property.propertyName || '民宿详情'" icon="ArrowLeft" @back="$router.back()" />
+    <!-- Back Navigation -->
+    <div class="detail-nav">
+      <button class="back-link" @click="$router.back()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <span>Back</span>
+      </button>
+      <span class="nav-title">{{ property.propertyName || 'Property Detail' }}</span>
+    </div>
 
+    <!-- Loading Skeleton -->
     <el-skeleton :loading="loading" animated>
       <template #template>
-        <el-skeleton-item variant="rect" style="height: 240px; margin-bottom: 16px" />
-        <el-skeleton-item variant="rect" style="height: 200px" />
-      </template>
-      <template #default>
-        <div class="hero">
-          <div class="cover" :style="coverStyle" />
-          <div class="info">
-            <div class="eyebrow">民宿详情</div>
-            <h1>{{ property.propertyName }}</h1>
-            <div class="meta">
-              <span>{{ property.city }} · {{ property.address }}</span>
-              <span>入住 {{ property.checkInTime || '14:00' }} | 退房 {{ property.checkOutTime || '12:00' }}</span>
-            </div>
-            <div class="chips">
-              <el-tag type="primary">{{ typeText(property.propertyType) }}</el-tag>
-              <el-tag type="success">评分 {{ property.rating ?? '暂无' }}</el-tag>
-              <el-tag type="info">可售 {{ property.availableRooms ?? 0 }}</el-tag>
-            </div>
-            <p class="desc">{{ property.description || '暂无描述' }}</p>
-            <div class="actions">
-              <el-button type="primary" size="large" @click="openBooking()">快速预订</el-button>
-              <el-button size="large" @click="refresh">刷新</el-button>
-            </div>
-          </div>
+        <div class="skeleton-layout">
+          <div class="soft-skeleton skeleton-gallery"></div>
+          <div class="soft-skeleton skeleton-summary"></div>
         </div>
+      </template>
 
-        <el-card shadow="hover" class="card">
-          <template #header>
-            <div class="card-title">房型</div>
-          </template>
-          <el-empty v-if="!roomTypes.length" description="暂无房型数据" />
-          <el-row v-else :gutter="16">
-            <el-col :xs="24" :sm="12" :md="8" v-for="(rt, idx) in roomTypes" :key="rt.id || idx">
-              <div class="room-card">
-                <div class="room-cover">
-                  <img :src="roomImage(rt, idx)" alt="房型图片" loading="lazy" @error="onRoomImgError" />
-                </div>
-                <div class="room-name">{{ rt.typeName }}</div>
-                <div class="room-meta">
-                  <span>可住 {{ rt.maxOccupancy }} 人</span>
-                  <span>{{ rt.bedType || '床型未录入' }}</span>
-                </div>
-                <div class="room-desc">{{ rt.description || '暂无描述' }}</div>
-                <div class="room-footer">
-                  <div class="price">¥{{ Number(rt.basePrice || 0).toFixed(2) }}</div>
-                  <el-button type="primary" size="small" @click="openBooking(rt, idx)">预订</el-button>
-                </div>
-              </div>
-            </el-col>
-          </el-row>
-        </el-card>
-
-        <el-card shadow="hover" class="card">
-          <template #header>
-            <div class="card-title">设施与政策</div>
-          </template>
-          <div class="section">
-            <div class="section-title">设施</div>
-            <div v-if="facilities.length" class="chips">
-              <el-tag v-for="item in facilities" :key="item" style="margin-bottom: 6px">{{ item }}</el-tag>
-            </div>
-            <div v-else class="muted">暂无设施信息</div>
+      <template #default>
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- FIRST SCREEN: Gallery + Summary             -->
+        <!-- ═══════════════════════════════════════════ -->
+        <section class="hero-section fade-rise">
+          <div class="hero-gallery">
+            <HotelGallery :images="galleryImages" />
           </div>
-          <div class="section">
-            <div class="section-title">政策</div>
-            <div v-if="policies.length">
-              <ul class="policy-list">
-                <li v-for="p in policies" :key="p">{{ p }}</li>
-              </ul>
-            </div>
-            <div v-else class="muted">暂无政策信息</div>
+          <div class="hero-summary">
+            <HotelSummary
+              :property="property"
+              :review-count="reviewCount"
+              @book="openBooking()"
+              @favorite="onFavorite"
+              @share="onShare"
+            />
           </div>
-        </el-card>
+        </section>
 
-        <el-dialog v-model="bookingDialog" title="快速预订" width="520px">
-          <el-form :model="bookingForm" label-width="120px" ref="bookingFormRef" :rules="bookingRules">
-            <el-form-item label="房型" prop="roomTypeId">
-              <el-select v-model="bookingForm.roomTypeId" placeholder="请选择房型" style="width: 100%">
-                <el-option
-                  v-for="(rt, idx) in roomTypes"
-                  :key="rt.id || idx"
-                  :label="`${rt.typeName} · ¥${Number(rt.basePrice || 0).toFixed(2)}`"
-                  :value="rt.id"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="入住/离店" prop="dates">
-              <el-date-picker
-                v-model="bookingForm.dates"
-                type="daterange"
-                start-placeholder="入住日期"
-                end-placeholder="离店日期"
-                style="width: 100%"
-              />
-            </el-form-item>
-            <el-form-item label="入住人数" prop="guests">
-              <el-input-number v-model="bookingForm.guests" :min="1" :max="6" />
-            </el-form-item>
-            <el-form-item label="价格预览">
-              <div class="price-preview">
-                <div>单晚价格：¥{{ currentPrice.toFixed(2) }}</div>
-                <div>入住天数：{{ nights }} 晚</div>
-                <div class="total">预计总价：¥{{ estimatedTotal }}</div>
-              </div>
-            </el-form-item>
-            <el-form-item label="联系人" prop="contactName">
-              <el-input v-model="bookingForm.contactName" placeholder="请输入联系人姓名" />
-            </el-form-item>
-            <el-form-item label="联系电话" prop="contactPhone">
-              <el-input v-model="bookingForm.contactPhone" placeholder="请输入手机号" />
-            </el-form-item>
-          </el-form>
-          <template #footer>
-            <el-button @click="bookingDialog = false">取消</el-button>
-            <el-button type="primary" @click="submitBooking" :loading="submitting">提交预订</el-button>
-          </template>
-        </el-dialog>
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- ROOM TYPES SECTION                          -->
+        <!-- ═══════════════════════════════════════════ -->
+        <section id="rooms" ref="roomsSectionRef" class="rooms-section fade-rise">
+          <div class="section-header">
+            <div>
+              <p class="section-kicker">Room Types</p>
+              <h2 class="section-title">Choose your perfect stay</h2>
+            </div>
+            <span v-if="roomTypes.length" class="section-count">{{ roomTypes.length }} room{{ roomTypes.length > 1 ? 's' : '' }}</span>
+          </div>
+
+          <div v-if="roomTypes.length" class="rooms-grid">
+            <RoomCard
+              v-for="(rt, idx) in roomTypes"
+              :key="rt.id || idx"
+              :room-type="rt"
+              :index="idx"
+              @book="openBooking($event)"
+            />
+          </div>
+          <EmptyState
+            v-else
+            title="No room types available"
+            description="Rooms will appear here once they've been added."
+          />
+        </section>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- INFO TABS SECTION                          -->
+        <!-- ═══════════════════════════════════════════ -->
+        <section class="info-section fade-rise">
+          <HotelTabs
+            :property="property"
+            :facilities="facilities"
+            :policies="policies"
+            :review-count="reviewCount"
+          />
+        </section>
       </template>
     </el-skeleton>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- BOOKING DIALOG (unchanged logic)            -->
+    <!-- ═══════════════════════════════════════════ -->
+    <el-dialog v-model="bookingDialog" title="Quick Booking" width="560px" class="booking-dialog">
+      <el-form :model="bookingForm" label-position="top" ref="bookingFormRef" :rules="bookingRules">
+        <el-form-item label="Room Type" prop="roomTypeId">
+          <el-select v-model="bookingForm.roomTypeId" placeholder="Select a room type" style="width: 100%">
+            <el-option
+              v-for="(rt, idx) in roomTypes"
+              :key="rt.id || idx"
+              :label="`${rt.typeName} · ¥${Number(rt.basePrice || 0).toFixed(2)}`"
+              :value="rt.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Check-in / Check-out" prop="dates">
+          <el-date-picker
+            v-model="bookingForm.dates"
+            type="daterange"
+            start-placeholder="Check-in"
+            end-placeholder="Check-out"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="Guests" prop="guests">
+          <el-input-number v-model="bookingForm.guests" :min="1" :max="6" />
+        </el-form-item>
+        <el-form-item label="Price Preview">
+          <div class="price-preview">
+            <div>Per night: ¥{{ currentPrice.toFixed(2) }}</div>
+            <div>Stay: {{ nights }} night{{ nights > 1 ? 's' : '' }}</div>
+            <div class="price-preview__total">Estimated total: ¥{{ estimatedTotal }}</div>
+          </div>
+        </el-form-item>
+        <el-form-item label="Contact Name" prop="contactName">
+          <el-input v-model="bookingForm.contactName" placeholder="Your name" />
+        </el-form-item>
+        <el-form-item label="Contact Phone" prop="contactPhone">
+          <el-input v-model="bookingForm.contactPhone" placeholder="Your phone number" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="bookingDialog = false">Cancel</el-button>
+        <el-button type="primary" @click="submitBooking" :loading="submitting">Confirm Booking</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import EmptyState from '../components/EmptyState.vue'
+import HotelGallery from '../components/hotel/HotelGallery.vue'
+import HotelSummary from '../components/hotel/HotelSummary.vue'
+import HotelTabs from '../components/hotel/HotelTabs.vue'
+import RoomCard from '../components/hotel/RoomCard.vue'
 import { propertyApi, bookingApi } from '../api'
 
+// ── Router ────────────────────────────────────────
 const route = useRoute()
 const router = useRouter()
 
+// ── State ─────────────────────────────────────────
 const property = ref({})
 const roomTypes = ref([])
 const loading = ref(false)
 const bookingDialog = ref(false)
 const submitting = ref(false)
 const bookingFormRef = ref(null)
+const roomsSectionRef = ref(null)
 const bookingForm = ref({
   roomTypeId: null,
   dates: [],
@@ -149,94 +159,94 @@ const bookingForm = ref({
   contactPhone: ''
 })
 
+// ── Static Fallbacks ──────────────────────────────
 const STATIC_IMAGES = [
   'https://pic.nximg.cn/20120414/128199_105320827000_2.jpg',
   'https://pic.nximg.cn/file/20200603/128199_102610317000_2.jpg'
 ]
 const STATIC_FACILITIES = [
-  '免费高速 Wi-Fi 与全屋覆盖',
-  '24 小时前台与自助入住',
-  '空调 / 地暖，全屋智能门锁',
-  '早餐可选（需提前预约）',
-  '免费行李寄存，叫车协助',
-  '洗衣机 / 烘干机（部分房型）',
-  '提供一次性洗漱用品与吹风机'
+  'Free high-speed Wi-Fi throughout',
+  '24-hour front desk & self check-in',
+  'Air conditioning / underfloor heating',
+  'Breakfast available (advance booking required)',
+  'Free luggage storage & taxi assistance',
+  'Washer / dryer (selected rooms)',
+  'Disposable toiletries & hair dryer provided'
 ]
 const STATIC_POLICIES = [
-  '入住时间 14:00 之后，退房时间 12:00 之前；如需提前入住/延迟退房请与前台确认，可能产生额外费用。',
-  '取消政策：入住前 24 小时内取消将收取首晚房费，24 小时之前可免费取消（以平台规则为准）。',
-  '押金政策：部分房型需线下收取押金，退房验房后原路退还。',
-  '吸烟政策：室内全禁烟，违者将收取 500 元深度清洁费。',
-  '宠物政策：暂不接待宠物入住。',
-  '儿童政策：12 岁以下儿童可免费与父母同住（不含加床和早餐）。',
-  '发票政策：支持开具住宿发票，请在退房前向前台或房东提供抬头信息。'
+  'Check-in after 14:00, check-out before 12:00. Early check-in or late check-out by arrangement; fees may apply.',
+  'Free cancellation 24+ hours before check-in. Cancellations within 24 hours are subject to platform policy.',
+  'A deposit may be required for select room types; refundable after inspection.',
+  'Strictly non-smoking indoors. Deep-cleaning fees apply for violations.',
+  'Pets are not accommodated at this time.',
+  'Children under 12 stay free with parents (excludes extra bed and breakfast).',
+  'Accommodation invoices available — please provide billing details before check-out.'
 ]
 
-const facilities = computed(() => STATIC_FACILITIES)
-const policies = computed(() => STATIC_POLICIES)
+// ── Review count (placeholder) ────────────────────
+const reviewCount = ref(126)
+
+// ── Parsing Helpers ───────────────────────────────
+const parseList = (val) => {
+  if (!val) return []
+  if (Array.isArray(val)) return val.filter(x => typeof x === 'string' && x.trim())
+  try {
+    const parsed = JSON.parse(val)
+    return Array.isArray(parsed) ? parsed.filter(x => typeof x === 'string' && x.trim()) : []
+  } catch {
+    if (typeof val === 'string') {
+      return val.split(/[,\n，、;]/).map(x => x.trim()).filter(Boolean)
+    }
+    return []
+  }
+}
+
+const facilities = computed(() => {
+  const db = parseList(property.value.facilities)
+  return db.length ? db : STATIC_FACILITIES
+})
+
+const policies = computed(() => {
+  const db = parseList(property.value.policies)
+  return db.length ? db : STATIC_POLICIES
+})
 
 const parseImages = (val) => {
   if (!val) return []
-  if (Array.isArray(val)) return val.filter((x) => typeof x === 'string')
+  if (Array.isArray(val)) return val.filter(x => typeof x === 'string')
   try {
     const parsed = JSON.parse(val)
-    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === 'string') : []
-  } catch (e) {
-    // tolerate plain url string
+    return Array.isArray(parsed) ? parsed.filter(x => typeof x === 'string') : []
+  } catch {
     if (typeof val === 'string' && val.startsWith('http')) return [val]
     return []
   }
 }
 
-const coverStyle = computed(() => {
-  const dbImages = parseImages(property.value.images)
-  const url = dbImages[0] || STATIC_IMAGES[0]
-  return { backgroundImage: `url(${url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+const galleryImages = computed(() => {
+  const db = parseImages(property.value.images)
+  return db.length ? db : STATIC_IMAGES
 })
 
-const FALLBACK_IMG =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAYAAABV7bNHAAAACXBIWXMAAAsSAAALEgHS3X78AAAA/0lEQVR4nO3UsQkAIAwD0fb/6Z0lKpA12Nh4Jt9BxMyVAAAAAAAAAAAAAAAAAADgG7dwPZWf9g1tb29vHOU0A9nWZX1uHkCOVHrKeq8B6rD/XZTy/BFGMd0kRQz6kmoElSgzRFInknKQxSjbRFIvlkMojFKOtEUieSQxSNtEUi+WQyiMUo60RSJ5JDFI20RSL5ZD6KZJBWiySRWi6SVShtZCahd5L6pm2Q1kl2tqm4QmoXaS+qZtkNZJdrarpCaheJK9UeaFtJXaarpCahe5JaZ92NNVNdaKpCahfpJbJ83kDu6gZ0hW1d8kAAAAP//oAk/lKk3z8gAAAAASUVORK5CYII='
-
-const roomImage = (rt, idx) => {
-  const imgs = parseImages(rt?.images)
-  if (imgs.length) return imgs[0]
-  const pick = (rt?.id != null ? Number(rt.id) : idx || 0) % STATIC_IMAGES.length
-  return STATIC_IMAGES[pick]
-}
-
-const onRoomImgError = (evt) => {
-  const target = evt?.target
-  if (target && target.src !== FALLBACK_IMG) {
-    target.src = FALLBACK_IMG
-  }
-}
-
-const typeText = (val) => {
-  const map = {
-    HOMESTAY: '民宿',
-    HOTEL: '酒店',
-    APARTMENT: '公寓',
-    VILLA: '别墅',
-    OTHER: '其他'
-  }
-  return map[val] || val || '-'
-}
-
+// ── Data Loading ──────────────────────────────────
 const loadDetail = async () => {
   loading.value = true
   try {
     const { data } = await propertyApi.getDetail(route.params.id)
     property.value = data.property || {}
     roomTypes.value = data.roomTypes || []
-  } catch (err) {
-    ElMessage.error('加载详情失败')
+    if (route.hash === '#rooms') {
+      await nextTick()
+      roomsSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  } catch {
+    ElMessage.error('Failed to load property details')
   } finally {
     loading.value = false
   }
 }
 
-const refresh = () => loadDetail()
-
+// ── Booking Logic (unchanged) ─────────────────────
 const goBook = (roomType) => {
   router.push({
     name: 'SimpleBooking',
@@ -247,7 +257,7 @@ const goBook = (roomType) => {
   })
 }
 
-const openBooking = (rt, idx) => {
+const openBooking = (rt) => {
   bookingDialog.value = true
   bookingForm.value = {
     roomTypeId: rt?.id || roomTypes.value[0]?.id || null,
@@ -259,30 +269,26 @@ const openBooking = (rt, idx) => {
 }
 
 const bookingRules = {
-  roomTypeId: [{ required: true, message: '请选择房型', trigger: 'change' }],
-  dates: [{ type: 'array', required: true, message: '请选择入住和离店日期', trigger: 'change' }],
-  contactName: [{ required: true, message: '请输入联系人', trigger: 'blur' }],
-  contactPhone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }]
+  roomTypeId: [{ required: true, message: 'Please select a room type', trigger: 'change' }],
+  dates: [{ type: 'array', required: true, message: 'Please select check-in and check-out dates', trigger: 'change' }],
+  contactName: [{ required: true, message: 'Please enter contact name', trigger: 'blur' }],
+  contactPhone: [{ required: true, message: 'Please enter contact phone', trigger: 'blur' }]
 }
 
 const nights = computed(() => {
   if (!bookingForm.value.dates?.length) return 1
   const [start, end] = bookingForm.value.dates
   if (!start || !end) return 1
-  const s = new Date(start)
-  const e = new Date(end)
-  const diff = Math.round((e - s) / (1000 * 60 * 60 * 24))
+  const diff = Math.round((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24))
   return diff > 0 ? diff : 1
 })
 
 const currentPrice = computed(() => {
-  const rt = roomTypes.value.find((r) => r.id === bookingForm.value.roomTypeId)
+  const rt = roomTypes.value.find(item => item.id === bookingForm.value.roomTypeId)
   return Number(rt?.basePrice || 0)
 })
 
-const estimatedTotal = computed(() => {
-  return (currentPrice.value * nights.value || 0).toFixed(2)
-})
+const estimatedTotal = computed(() => (currentPrice.value * nights.value || 0).toFixed(2))
 
 const submitBooking = async () => {
   try {
@@ -302,15 +308,15 @@ const submitBooking = async () => {
       paymentStatus: 'UNPAID'
     }
     const { data } = await bookingApi.create(payload)
-    ElMessage.success('预订已创建，请尽快完成支付')
+    ElMessage.success('Booking created! Please complete payment.')
     bookingDialog.value = false
     router.push({
       name: 'Booking',
       query: { tab: 'cart', bookingId: data?.id }
     })
-  } catch (err) {
-    if (err !== false) {
-      ElMessage.error(err?.response?.data?.error || '提交失败')
+  } catch (error) {
+    if (error !== false) {
+      ElMessage.error(error?.response?.data?.error || 'Booking failed')
     }
   } finally {
     submitting.value = false
@@ -319,136 +325,231 @@ const submitBooking = async () => {
 
 const toDate = (val) => {
   if (!val) return null
-  const d = new Date(val)
-  return d.toISOString().split('T')[0]
+  return new Date(val).toISOString().split('T')[0]
 }
 
+// ── User Actions ──────────────────────────────────
+const onFavorite = () => {
+  ElMessage.success('Added to favorites!')
+}
+
+const onShare = () => {
+  const url = window.location.href
+  navigator.clipboard?.writeText(url)
+    .then(() => ElMessage.success('Link copied to clipboard!'))
+    .catch(() => ElMessage.info('Share this page: ' + url))
+}
+
+// ── Init ──────────────────────────────────────────
 onMounted(loadDetail)
 </script>
 
 <style scoped>
+/* ═══════════════════════════════════════════════ */
+/* PAGE CONTAINER                                  */
+/* ═══════════════════════════════════════════════ */
 .property-detail {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 20px 24px 60px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 36px;
 }
-.hero {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 20px;
-  align-items: stretch;
-}
-.cover {
-  min-height: 260px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #74ebd5 0%, #acb6e5 100%);
-}
-.info {
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
-}
-.eyebrow {
-  color: #409eff;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-.info h1 {
-  margin: 6px 0 8px;
-}
-.meta {
-  color: #606266;
+
+/* ── Back Navigation ── */
+.detail-nav {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 6px;
+  align-items: center;
+  gap: 16px;
 }
-.chips {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 8px 0;
-}
-.desc {
-  color: #606266;
-  line-height: 1.6;
-}
-.actions {
-  margin-top: 12px;
-  display: flex;
-  gap: 10px;
-}
-.card {
-  border: none;
-}
-.card-title {
-  font-weight: 600;
-}
-.room-card {
-  border: 1px solid #ebeef5;
-  border-radius: 12px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
-  height: 100%;
-}
-.room-cover {
-  height: 120px;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #f2f6fc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.room-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.room-name {
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(128, 93, 72, 0.12);
+  background: rgba(255, 255, 255, 0.65);
+  color: #5c4a3a;
+  font-size: 14px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
 }
-.room-meta {
-  color: #909399;
+
+.back-link:hover {
+  background: #fff;
+  border-color: rgba(201, 134, 106, 0.3);
+  color: #c97a50;
+}
+
+.nav-title {
+  font-size: 14px;
+  color: #aa9890;
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════ */
+/* HERO SECTION: Gallery + Summary                 */
+/* ═══════════════════════════════════════════════ */
+.hero-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+  align-items: start;
+}
+
+.hero-gallery {
+  position: sticky;
+  top: 20px;
+}
+
+.hero-summary {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  flex-direction: column;
 }
-.room-desc {
-  color: #606266;
-  font-size: 13px;
-  min-height: 40px;
+
+/* ═══════════════════════════════════════════════ */
+/* ROOM TYPES SECTION                              */
+/* ═══════════════════════════════════════════════ */
+.rooms-section {
+  padding: 36px;
+  border-radius: 28px;
+  background: rgba(255, 253, 249, 0.78);
+  border: 1px solid rgba(128, 93, 72, 0.08);
+  box-shadow: 0 12px 36px rgba(114, 83, 60, 0.05);
+  backdrop-filter: blur(12px);
 }
-.room-footer {
+
+.section-header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  margin-top: auto;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
-.price {
-  font-size: 18px;
+
+.section-kicker {
+  margin: 0 0 8px;
+  font-size: 12px;
   font-weight: 700;
-  color: #f56c6c;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #c97a50;
 }
-.section {
-  margin-bottom: 12px;
-}
+
 .section-title {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 700;
+  color: #3f312c;
+  line-height: 1.2;
+}
+
+.section-count {
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(246, 237, 229, 0.7);
+  color: #7d6d66;
+  font-size: 13px;
   font-weight: 600;
-  margin-bottom: 6px;
 }
-.policy-list {
-  padding-left: 16px;
-  color: #606266;
+
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 24px;
 }
-.muted {
-  color: #909399;
+
+/* ═══════════════════════════════════════════════ */
+/* INFO TABS SECTION                               */
+/* ═══════════════════════════════════════════════ */
+.info-section {
+  padding: 36px;
+  border-radius: 28px;
+  background: rgba(255, 253, 249, 0.78);
+  border: 1px solid rgba(128, 93, 72, 0.08);
+  box-shadow: 0 12px 36px rgba(114, 83, 60, 0.05);
+  backdrop-filter: blur(12px);
 }
-@media (max-width: 992px) {
-  .hero {
+
+/* ═══════════════════════════════════════════════ */
+/* SKELETON                                        */
+/* ═══════════════════════════════════════════════ */
+.skeleton-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+}
+
+.skeleton-gallery {
+  aspect-ratio: 4 / 3;
+  border-radius: 24px;
+}
+
+.skeleton-summary {
+  min-height: 480px;
+  border-radius: 24px;
+}
+
+/* ═══════════════════════════════════════════════ */
+/* BOOKING DIALOG OVERRIDES                        */
+/* ═══════════════════════════════════════════════ */
+.price-preview {
+  display: grid;
+  gap: 6px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: rgba(255, 248, 241, 0.8);
+  color: #7d6d66;
+  font-size: 14px;
+}
+
+.price-preview__total {
+  color: #c97a50;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+/* ═══════════════════════════════════════════════ */
+/* RESPONSIVE                                      */
+/* ═══════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .hero-section {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .hero-gallery {
+    position: static;
+  }
+
+  .rooms-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skeleton-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .property-detail {
+    padding: 14px 16px 40px;
+    gap: 24px;
+  }
+
+  .rooms-section,
+  .info-section {
+    padding: 24px 20px;
+    border-radius: 22px;
+  }
+
+  .rooms-grid {
     grid-template-columns: 1fr;
   }
 }

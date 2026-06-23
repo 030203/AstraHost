@@ -2,6 +2,34 @@
   <div class="payment">
     <el-page-header content="支付管理" icon="ArrowLeft" @back="$router.push('/')" />
 
+    <!-- Payment summary -->
+    <el-row :gutter="16" class="summary-row">
+      <el-col :xs="12" :sm="6">
+        <div class="summary-card">
+          <div class="sum-label">收款总额</div>
+          <div class="sum-value">¥{{ totalRevenue }}</div>
+        </div>
+      </el-col>
+      <el-col :xs="12" :sm="6">
+        <div class="summary-card">
+          <div class="sum-label">成功笔数</div>
+          <div class="sum-value">{{ successCount }}</div>
+        </div>
+      </el-col>
+      <el-col :xs="12" :sm="6">
+        <div class="summary-card">
+          <div class="sum-label">待处理</div>
+          <div class="sum-value warn">{{ pendingCount }}</div>
+        </div>
+      </el-col>
+      <el-col :xs="12" :sm="6">
+        <div class="summary-card">
+          <div class="sum-label">退款笔数</div>
+          <div class="sum-value info">{{ refundCount }}</div>
+        </div>
+      </el-col>
+    </el-row>
+
     <el-card shadow="hover" class="mt-16">
       <template #header>
         <div class="card-header">
@@ -171,6 +199,16 @@ const bookingStatusType = (val) => {
 const isWaste = (row) => row?.status === 'CANCELLED' || row?.status === 'FAILED' || row?.paymentType === 'REFUND'
 const canRefund = (row) => row?.status === 'SUCCESS' && row?.booking?.status === 'CONFIRMED'
 
+const totalRevenue = computed(() => {
+  const total = (payments.value || [])
+    .filter(p => p.status === 'SUCCESS')
+    .reduce((sum, p) => sum + Number(p.amount || 0), 0)
+  return total.toFixed(2)
+})
+const successCount = computed(() => (payments.value || []).filter(p => p.status === 'SUCCESS').length)
+const pendingCount = computed(() => (payments.value || []).filter(p => p.status === 'PENDING').length)
+const refundCount = computed(() => (payments.value || []).filter(p => p.paymentType === 'REFUND' || p.status === 'CANCELLED').length)
+
 const sortedPayments = computed(() => {
   const activeWeights = { SUCCESS: 0, PENDING: 1 }
   const list = [...(payments.value || [])]
@@ -290,6 +328,33 @@ onMounted(() => {
 }
 .mt-16 {
   margin-top: 12px;
+}
+.summary-row {
+  margin-top: 8px;
+}
+.summary-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px 20px;
+  border: 1px solid rgba(15, 120, 255, 0.08);
+  box-shadow: 0 8px 24px rgba(15, 55, 112, 0.06);
+  margin-bottom: 8px;
+}
+.sum-label {
+  color: #94a3b8;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.sum-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.sum-value.warn {
+  color: #d97706;
+}
+.sum-value.info {
+  color: #6366f1;
 }
 .card-header {
   display: flex;

@@ -15,6 +15,9 @@ import Admin from '../views/Admin.vue'
 import UserProfile from '../views/UserProfile.vue'
 import MerchantOrders from '../views/MerchantOrders.vue'
 import PendingPayment from '../views/PendingPayment.vue'
+import Assistant from '../views/Assistant.vue'
+import HotelCardTest from '../views/HotelCardTest.vue'
+import NotFound from '../views/NotFound.vue'
 
 const routes = [
   {
@@ -25,7 +28,8 @@ const routes = [
   {
     path: '/booking',
     name: 'Booking',
-    component: Booking
+    component: Booking,
+    meta: { requiresAuth: true }
   },
   {
     path: '/simple-booking',
@@ -35,12 +39,14 @@ const routes = [
   {
     path: '/stats',
     name: 'Stats',
-    component: Stats
+    component: Stats,
+    meta: { requiresAuth: true }
   },
   {
     path: '/settings',
     name: 'Settings',
-    component: Settings
+    component: Settings,
+    meta: { requiresAuth: true }
   },
   {
     path: '/property',
@@ -55,22 +61,26 @@ const routes = [
   {
     path: '/room-type',
     name: 'RoomType',
-    component: RoomType
+    component: RoomType,
+    meta: { requiresAuth: true }
   },
   {
     path: '/payments',
     name: 'Payment',
-    component: Payment
+    component: Payment,
+    meta: { requiresAuth: true }
   },
   {
     path: '/pending-payment',
     name: 'PendingPayment',
-    component: PendingPayment
+    component: PendingPayment,
+    meta: { requiresAuth: true }
   },
   {
     path: '/merchant-orders',
     name: 'MerchantOrders',
-    component: MerchantOrders
+    component: MerchantOrders,
+    meta: { requiresAuth: true }
   },
   {
     path: '/coupons',
@@ -80,28 +90,81 @@ const routes = [
   {
     path: '/admin',
     name: 'Admin',
-    component: Admin
+    component: Admin,
+    meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: Login,
+    meta: { guestOnly: true }
   },
   {
     path: '/register',
     name: 'Register',
-    component: Register
+    component: Register,
+    meta: { guestOnly: true }
   },
   {
     path: '/profile',
     name: 'UserProfile',
-    component: UserProfile
+    component: UserProfile,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/assistant',
+    name: 'Assistant',
+    component: Assistant,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/assistant-preview',
+    name: 'AssistantPreview',
+    component: Assistant
+  },
+  {
+    path: '/hotel-card-test',
+    name: 'HotelCardTest',
+    component: HotelCardTest
+  },
+  {
+    path: '/copilot/:pathMatch(.*)*',
+    redirect: '/assistant'
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: NotFound
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  scrollBehavior() {
+    return { top: 0 }
+  }
+})
+
+// Auth guard
+router.beforeEach((to, from, next) => {
+  const userStr = localStorage.getItem('user')
+  let user = null
+  try { user = userStr ? JSON.parse(userStr) : null } catch (e) { /* ignore */ }
+
+  if (to.meta.requiresAuth && !user) {
+    return next({ name: 'Login', query: { redirect: to.fullPath } })
+  }
+
+  if (to.meta.requiresAdmin && user?.role !== 'ADMIN') {
+    return next({ name: 'Home' })
+  }
+
+  if (to.meta.guestOnly && user) {
+    return next({ name: 'Home' })
+  }
+
+  next()
 })
 
 export default router

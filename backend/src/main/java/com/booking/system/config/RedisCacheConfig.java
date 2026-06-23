@@ -84,6 +84,7 @@ public class RedisCacheConfig {
         String schema = sslEnabled ? "rediss://" : "redis://";
 
         Config config = new Config();
+        config.setLazyInitialization(true);
         SingleServerConfig singleServer = config.useSingleServer()
                 .setAddress(schema + redisProperties.getHost() + ":" + redisProperties.getPort())
                 .setDatabase(redisProperties.getDatabase())

@@ -1,71 +1,67 @@
-﻿<template>
-  <div id="app">
-    <el-container>
-      <el-header>
+<template>
+  <div id="app-shell">
+    <el-container class="app-layout">
+      <!-- ═══════════════════════════════════════════════ -->
+      <!-- NAVIGATION — dark on Home/AI, light elsewhere   -->
+      <!-- ═══════════════════════════════════════════════ -->
+      <el-header
+        class="app-header"
+        :class="{
+          'app-header--floating': isFloatingNav,
+          'app-header--light': !isFloatingNav
+        }"
+      >
         <div class="header-content">
-          <div class="logo">
-            <el-icon><House /></el-icon>
-            <span class="logo-text">FindMyBed</span>
-          </div>
-          <nav class="nav-menu">
-            <router-link to="/" class="nav-link">
-              <el-icon><HomeFilled /></el-icon>
-              <span>首页</span>
-            </router-link>
-            <router-link to="/simple-booking" class="nav-link">
-              <el-icon><Calendar /></el-icon>
-              <span>快速预订</span>
-            </router-link>
-            <router-link to="/booking" class="nav-link" v-if="isLoggedIn">
-              <el-icon><Calendar /></el-icon>
-              <span>{{ bookingNavText }}</span>
-            </router-link>
-            <router-link to="/payments" class="nav-link" v-if="isLoggedIn">
-              <el-icon><Collection /></el-icon>
-              <span>支付管理</span>
+          <router-link to="/" class="brand" aria-label="返回首页">
+            <div class="brand-mark">
+              <el-icon><House /></el-icon>
+            </div>
+            <div class="brand-copy">
+              <strong>AstraHost</strong>
+            </div>
+          </router-link>
+
+          <button
+            class="hamburger" type="button"
+            @click="mobileNavOpen = !mobileNavOpen"
+            :aria-expanded="String(mobileNavOpen)"
+            aria-label="切换导航菜单"
+          >
+            <el-icon><component :is="mobileNavOpen ? Close : MenuIcon" /></el-icon>
+          </button>
+
+          <nav class="nav" :class="{ 'nav--open': mobileNavOpen }">
+            <router-link
+              v-for="item in visibleNavItems"
+              :key="item.key"
+              :to="item.to"
+              class="nav-link"
+            >
+              <el-icon><component :is="item.icon" /></el-icon>
+              <span>{{ item.label }}</span>
             </router-link>
 
-            <router-link
-              to="/merchant-orders"
-              class="nav-link"
-              v-if="isLoggedIn && (userInfo?.role === 'MERCHANT' || userInfo?.role === 'ADMIN')"
-            >
-              <el-icon><Tickets /></el-icon>
-              <span>订单</span>
+            <router-link :to="aiCopilotPath" class="nav-link">
+              <el-icon><ChatLineRound /></el-icon>
+              <span>AI 客服</span>
             </router-link>
-            <router-link
-              to="/property"
-              class="nav-link"
-              v-if="isLoggedIn && (userInfo?.role === 'MERCHANT' || userInfo?.role === 'ADMIN')"
-            >
-              <el-icon><House /></el-icon>
-              <span>民宿管理</span>
-            </router-link>
-            <router-link to="/profile" class="nav-link" v-if="isLoggedIn">
-              <el-icon><Avatar /></el-icon>
-              <span>个人中心</span>
-            </router-link>
-            <router-link
-              to="/admin"
-              class="nav-link"
-              v-if="isLoggedIn && userInfo?.role === 'ADMIN'"
-            >
-              <el-icon><Tickets /></el-icon>
-              <span>后台管理</span>
-            </router-link>
-            <router-link to="/login" class="nav-link" v-if="!isLoggedIn">
+
+            <router-link v-if="!isLoggedIn" to="/login" class="nav-link nav-link--accent">
               <el-icon><User /></el-icon>
               <span>登录</span>
             </router-link>
-            <div class="user-info" v-if="isLoggedIn">
+
+            <div v-else class="session-pill">
+              <span class="session-role">{{ roleText(user?.role) }}</span>
               <el-dropdown @command="handleCommand">
-                <span class="user-dropdown">
-                  <el-avatar :size="28" :src="userInfo?.avatar" icon="Avatar" />
-                  <span>{{ userInfo?.username }}</span>
-                  <el-icon class="el-icon--right"><ArrowDown /></el-icon>
-                </span>
+                <button class="session-trigger" type="button">
+                  <el-avatar :size="30" :src="user?.avatar" icon="Avatar" />
+                  <span>{{ user?.username }}</span>
+                  <el-icon><ArrowDown /></el-icon>
+                </button>
                 <template #dropdown>
                   <el-dropdown-menu>
+                    <el-dropdown-item command="profile">个人中心</el-dropdown-item>
                     <el-dropdown-item command="logout">退出登录</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
@@ -74,224 +70,383 @@
           </nav>
         </div>
       </el-header>
-      <el-main class="main-area">
-        <div class="main-panel">
-          <router-view></router-view>
+
+      <!-- ═══════════════════════════════════════════════ -->
+      <!-- MAIN CONTENT                                   -->
+      <!-- ═══════════════════════════════════════════════ -->
+      <el-main class="app-main" :class="{ 'app-main--full': isFloatingNav }">
+        <div class="main-frame" :class="{ 'main-frame--plain': isFloatingNav }">
+          <router-view v-slot="{ Component, route }">
+            <transition :name="route.path === '/' ? 'app-page-fast' : 'app-page'">
+              <component :is="Component" :key="route.fullPath" />
+            </transition>
+          </router-view>
         </div>
       </el-main>
     </el-container>
-    <AiAssistant />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { House, HomeFilled, Calendar, User, Avatar, ArrowDown, Tickets, Collection } from '@element-plus/icons-vue'
-import AiAssistant from './components/AiAssistant.vue'
+import { computed, watch, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import {
+  House, HomeFilled, Calendar, User, Avatar, ArrowDown,
+  Tickets, Collection, Menu as MenuIcon, Close, ChatLineRound,
+  Setting, DataAnalysis
+} from '@element-plus/icons-vue'
+import { AI_COPILOT_PATH, clearAiCopilotState } from './utils/aiCopilot'
+import { useSession } from './composables/useSession'
 
 const router = useRouter()
 const route = useRoute()
-const userInfo = ref(null)
-const isLoggedIn = computed(() => !!userInfo.value)
-const bookingNavText = computed(() => (userInfo.value?.role === 'USER' ? '购物车 / 订单' : '预订管理'))
+const mobileNavOpen = ref(false)
+const aiCopilotPath = AI_COPILOT_PATH
 
-const syncUser = () => {
-  const userStr = localStorage.getItem('user')
-  if (userStr) {
-    try {
-      userInfo.value = JSON.parse(userStr)
-    } catch (e) {
-      userInfo.value = null
-    }
-  } else {
-    userInfo.value = null
-  }
+// Floating nav (absolute over hero) only on Home
+const isFloatingNav = computed(() => route.path === '/')
+
+const { user, isLoggedIn, syncUser } = useSession()
+
+const roleText = (role) => {
+  const roleMap = { USER: '住客', MERCHANT: '商户', ADMIN: '管理员' }
+  return roleMap[role] || '访客'
 }
 
-onMounted(() => {
+const navItems = computed(() => [
+  { key: 'home', label: '首页', to: '/', icon: HomeFilled, show: true },
+  { key: 'quick-booking', label: '快速预订', to: '/simple-booking', icon: Calendar, show: true },
+  { key: 'booking', label: user.value?.role === 'USER' ? '购物车 / 订单' : '预订管理', to: '/booking', icon: Tickets, show: isLoggedIn.value },
+  { key: 'payments', label: '支付管理', to: '/payments', icon: Collection, show: isLoggedIn.value },
+  { key: 'merchant-orders', label: '订单', to: '/merchant-orders', icon: Tickets, show: isLoggedIn.value && ['MERCHANT', 'ADMIN'].includes(user.value?.role) },
+  { key: 'property', label: '民宿管理', to: '/property', icon: House, show: isLoggedIn.value && ['MERCHANT', 'ADMIN'].includes(user.value?.role) },
+  { key: 'stats', label: '数据看板', to: '/stats', icon: DataAnalysis, show: isLoggedIn.value && user.value?.role === 'ADMIN' },
+  { key: 'settings', label: '设置', to: '/settings', icon: Setting, show: isLoggedIn.value },
+  { key: 'profile', label: '个人中心', to: '/profile', icon: Avatar, show: isLoggedIn.value },
+  { key: 'admin', label: '后台管理', to: '/admin', icon: Tickets, show: isLoggedIn.value && user.value?.role === 'ADMIN' }
+])
+
+const visibleNavItems = computed(() => navItems.value.filter(item => item.show))
+
+watch(() => route.fullPath, () => {
   syncUser()
-  window.addEventListener('user-changed', syncUser)
-  window.addEventListener('storage', syncUser)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('user-changed', syncUser)
-  window.removeEventListener('storage', syncUser)
-})
-
-// 切换路由时也同步一次，避免登录后需要刷新
-watch(
-  () => route.fullPath,
-  () => syncUser(),
-  { immediate: true }
-)
+  mobileNavOpen.value = false
+  // instantly switch body background — no flash during transition
+  document.body.style.background = route.path === '/' ? '#1a100c' : '#fff8f1'
+}, { immediate: true })
 
 const handleCommand = (command) => {
+  if (command === 'profile') { router.push('/profile'); return }
   if (command === 'logout') {
     localStorage.removeItem('user')
+    clearAiCopilotState()
     window.dispatchEvent(new Event('user-changed'))
-    userInfo.value = null
     router.push('/login')
   }
 }
 </script>
 
 <style scoped>
-.root-vars {
-  --primary: #2563eb;
-  --primary-soft: #eff6ff;
-  --ink: #0f172a;
-  --muted: #94a3b8;
-  --card-border: rgba(15, 120, 255, 0.08);
-}
+/* ═══════════════════════════════════════════════ */
+/* SHELL                                          */
+/* ═══════════════════════════════════════════════ */
+#app-shell { min-height: 100vh; }
+.app-layout { min-height: 100vh; }
 
-#app {
-  min-height: 100vh;
-  background:
-    radial-gradient(620px 620px at 12% 22%, rgba(37, 99, 235, 0.10), transparent 58%),
-    radial-gradient(520px 520px at 82% 8%, rgba(100, 181, 255, 0.10), transparent 55%),
-    radial-gradient(720px 720px at 60% 72%, rgba(58, 160, 255, 0.10), transparent 62%),
-    linear-gradient(135deg, #f6f9ff 0%, #fbfdff 45%, #ffffff 100%);
-}
-
-.el-header {
-  background: linear-gradient(110deg, #0f78ff 0%, #3aa0ff 60%, #64b5ff 100%);
-  box-shadow: 0 8px 24px rgba(5, 83, 168, 0.25);
-  padding: 0;
-  height: 64px !important;
+/* ═══════════════════════════════════════════════ */
+/* DARK GLASS PILL — default for ALL routes       */
+/* ═══════════════════════════════════════════════ */
+.app-header {
+  z-index: 40;
+  background: transparent;
+  position: sticky;
+  top: 0;
+  height: 72px !important;
+  padding: 10px 18px 0;
 }
 
 .header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 100%;
-  padding: 0 30px;
-  max-width: 1400px;
+  gap: 4px;
+  max-width: var(--app-max-width);
   margin: 0 auto;
+  padding: 8px 24px;
+  border-radius: 999px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.logo {
-  display: flex;
+/* ── Brand ── */
+.brand {
+  display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 20px;
-  font-weight: bold;
-  color: #ffffff;
+  text-decoration: none;
+  flex-shrink: 0;
 }
 
-.logo .el-icon {
-  font-size: 28px;
-}
-
-.nav-menu {
+.brand-mark {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  color: #fff8f1;
+  font-size: 17px;
+  background: linear-gradient(145deg, #d0845a, #c97a50);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.20);
+  flex-shrink: 0;
+}
+
+.brand-copy { display: grid; gap: 2px; }
+.brand-copy strong { color: #fff; font-size: 16px; line-height: 1; }
+
+/* ── Nav links ── */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+  gap: 2px;
 }
 
 .nav-link {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  color: #e5efff;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.78);
   text-decoration: none;
-  border-radius: 8px;
-  transition: all 0.25s ease;
-  font-size: 14px;
-  backdrop-filter: blur(2px);
-  border: 1px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.nav-link:hover {
-  background: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.12);
-}
+.nav-link:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }
+.nav-link.router-link-active { color: #fff; background: rgba(255, 255, 255, 0.15); font-weight: 600; }
 
-.nav-link.router-link-active {
-  background: #ffffff;
-  color: #0f78ff;
-  box-shadow: 0 10px 22px rgba(15, 120, 255, 0.18);
-  border-color: rgba(15, 120, 255, 0.18);
+.nav-link--accent {
+  color: #fff;
+  background: rgba(201, 134, 106, 0.65);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+.nav-link--accent:hover { background: rgba(201, 134, 106, 0.85); }
 
-.user-info {
-  margin-left: 8px;
-}
-
-.user-dropdown {
-  display: flex;
+/* ── Session ── */
+.session-pill {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  cursor: pointer;
-  padding: 6px 10px;
+  margin-left: 4px;
+  padding: 5px 6px;
   border-radius: 999px;
-  transition: all 0.25s ease;
-  color: #e5efff;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
 }
 
-.user-dropdown:hover {
-  background: rgba(255, 255, 255, 0.24);
-  color: #ffffff;
+.session-role { padding: 0 6px; font-size: 11px; font-weight: 500; color: rgba(255, 255, 255, 0.55); }
+
+.session-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 8px 0 2px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.session-trigger:hover { background: rgba(255, 255, 255, 0.08); }
+
+/* ── Hamburger ── */
+.hamburger {
+  display: none;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.10);
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-.main-area {
-  padding: 30px;
-  max-width: 1400px;
-  margin: 0 auto;
+/* ═══════════════════════════════════════════════ */
+/* LIGHT VARIANT — all pages EXCEPT Home/AI       */
+/* ═══════════════════════════════════════════════ */
+.app-header--light .header-content {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 2px 16px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.app-header--light .brand-mark {
+  color: #fff;
+  background: linear-gradient(145deg, #d0845a, #c97a50);
+  box-shadow: 0 4px 10px rgba(200, 120, 70, 0.25);
+}
+
+.app-header--light .brand-copy strong {
+  color: #2c2416;
+}
+
+.app-header--light .nav-link {
+  color: rgba(60, 45, 30, 0.72);
+}
+
+.app-header--light .nav-link:hover {
+  color: #2c2416;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.app-header--light .nav-link.router-link-active {
+  color: #2c2416;
+  background: rgba(0, 0, 0, 0.06);
+  font-weight: 600;
+}
+
+.app-header--light .nav-link--accent {
+  color: #fff;
+  background: rgba(201, 134, 106, 0.78);
+  box-shadow: 0 3px 10px rgba(200, 120, 70, 0.18);
+}
+
+.app-header--light .nav-link--accent:hover {
+  background: rgba(201, 134, 106, 0.92);
+}
+
+.app-header--light .session-pill {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.app-header--light .session-role {
+  color: rgba(60, 45, 30, 0.48);
+}
+
+.app-header--light .session-trigger {
+  color: #2c2416;
+}
+
+.app-header--light .session-trigger:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.app-header--light .hamburger {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.04);
+  color: #2c2416;
+}
+
+/* ═══════════════════════════════════════════════ */
+/* FLOATING VARIANT — Home page only              */
+/* ═══════════════════════════════════════════════ */
+.app-header--floating {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  height: auto !important;
+  padding: 0;
+}
+
+.app-header--floating .header-content {
+  width: auto;
+  max-width: none;
+}
+
+/* ═══════════════════════════════════════════════ */
+/* MAIN CONTENT                                   */
+/* ═══════════════════════════════════════════════ */
+.app-main { width: 100%; padding: 10px 0 0; }
+
+.app-main--full {
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.main-frame {
+  position: relative;
   width: 100%;
-}
-
-.main-panel {
-  background: #ffffff;
-  border-radius: 18px;
-  box-shadow: 0 20px 50px rgba(8, 49, 124, 0.14);
-  padding: 22px;
-  border: 1px solid var(--card-border);
-}
-
-:global(.el-card) {
-  border-radius: 14px;
-  border: 1px solid rgba(15, 120, 255, 0.08) !important;
-  box-shadow: 0 12px 32px rgba(15, 120, 255, 0.08);
-}
-
-:global(.el-button--primary:not(.is-plain):not(.is-text):not(.is-link)) {
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 55%, #2563eb 100%);
+  padding: 18px;
+  border-radius: 0;
   border: none;
-  color: #ffffff;
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+  border-bottom: 1px solid rgba(128, 93, 72, 0.06);
+  background:
+    radial-gradient(circle at top right, rgba(255, 235, 220, 0.5), transparent 26%),
+    linear-gradient(180deg, rgba(255, 253, 249, 0.6), rgba(255, 250, 245, 0.7));
+  box-shadow: none;
 }
 
-:global(.el-button--primary:not(.is-plain):not(.is-text):not(.is-link):hover) {
-  filter: brightness(1.02);
-}
-
-:global(.el-button--success:not(.is-plain):not(.is-text):not(.is-link)) {
-  background: linear-gradient(135deg, #34d399 0%, #22c55e 55%, #16a34a 100%);
+.main-frame--plain {
+  padding: 0;
   border: none;
-  color: #ffffff;
-  box-shadow: 0 10px 24px rgba(34, 197, 94, 0.20);
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ═══════════════════════════════════════════════ */
+/* RESPONSIVE                                     */
+/* ═══════════════════════════════════════════════ */
+@media (max-width: 1200px) {
+  .nav-link { padding: 8px 10px; }
+}
+
+@media (max-width: 992px) {
+  .app-header { height: auto !important; }
+
+  .app-header--floating {
+    left: 16px;
+    right: 16px;
+    transform: none;
+    top: 16px;
+  }
+
+  .header-content { flex-wrap: wrap; border-radius: 22px; padding: 12px 16px; }
+
+  .hamburger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+  }
+
+  .nav { display: none; width: 100%; flex-direction: column; align-items: stretch; padding-top: 8px; }
+  .nav--open { display: flex; }
+  .nav-link, .session-pill { width: 100%; }
+  .session-pill { justify-content: space-between; }
+  .session-trigger { width: 100%; justify-content: flex-start; }
 }
 
 @media (max-width: 768px) {
-  .header-content {
-    padding: 0 15px;
-  }
-
-  .logo-text {
-    display: none;
-  }
-
-  .nav-link span {
-    display: none;
-  }
+  .app-header { padding: 8px 12px 0; }
+  .header-content { padding: 10px 14px; border-radius: 20px; }
+  .main-frame { padding: 14px; }
+  .app-main { padding: 8px 0 0; }
+  .brand-copy strong { font-size: 15px; }
 }
 </style>
-
-

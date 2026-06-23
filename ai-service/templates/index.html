@@ -1,0 +1,2743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客服推荐工作台</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg: #eff6f5;
+            --panel: #ffffff;
+            --soft: #f6fbfa;
+            --line: #d8e7e4;
+            --line-strong: #bfd7d2;
+            --text: #17332e;
+            --subtext: #5b7872;
+            --brand: #0f8b85;
+            --brand-deep: #0b6f6a;
+            --brand-soft: #def8f3;
+            --accent: #f97316;
+            --accent-soft: #fff1e9;
+            --gold: #f59e0b;
+            --shadow: 0 18px 48px rgba(20, 54, 48, 0.08);
+            --shadow-soft: 0 10px 30px rgba(15, 139, 133, 0.08);
+            --radius: 24px;
+            --transition-theme: 0.35s ease;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f1a18;
+            --panel: #1a2a27;
+            --soft: #1f302c;
+            --line: #2a403a;
+            --line-strong: #3a524a;
+            --text: #e2f0ea;
+            --subtext: #97b5aa;
+            --brand: #2dd4bf;
+            --brand-deep: #5ee8d4;
+            --brand-soft: #134e44;
+            --accent: #fb923c;
+            --accent-soft: #3d2010;
+            --gold: #fbbf24;
+            --shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+            --shadow-soft: 0 10px 30px rgba(45, 212, 191, 0.12);
+        }
+
+        [data-theme="dark"] .panel {
+            background: rgba(26, 42, 39, 0.94);
+        }
+
+        [data-theme="dark"] .message.assistant {
+            background: #1f302c;
+            border-color: #2a403a;
+        }
+
+        [data-theme="dark"] .message.user {
+            background: linear-gradient(135deg, #1a3a30 0%, #1a3028 100%);
+            color: #e2f0ea;
+        }
+
+        [data-theme="dark"] .insight-card {
+            background: linear-gradient(180deg, #1a2f2a 0%, #162520 100%);
+        }
+
+        [data-theme="dark"] .topic-card {
+            background: linear-gradient(180deg, #1a2a27 0%, #162520 100%);
+        }
+
+        [data-theme="dark"] .hotel-card {
+            background: linear-gradient(180deg, #1a2a27 0%, #162520 100%);
+        }
+
+        [data-theme="dark"] .composer textarea,
+        [data-theme="dark"] .field input,
+        [data-theme="dark"] .field select {
+            background: #162520;
+            color: #e2f0ea;
+            border-color: #2a403a;
+        }
+
+        [data-theme="dark"] .quick-jumps {
+            background: linear-gradient(180deg, #1a2f2a 0%, #162520 100%);
+        }
+
+        [data-theme="dark"] .hotel-media {
+            background: linear-gradient(135deg, rgba(45, 212, 191, 0.1), rgba(45, 212, 191, 0.02)),
+                        linear-gradient(180deg, #1a3028 0%, #0f2018 100%);
+        }
+
+        [data-theme="dark"] .chip {
+            background: #1a3528;
+            color: #5ee8d4;
+        }
+
+        [data-theme="dark"] .chip:hover {
+            background: #1f4030;
+            border-color: #2a6658;
+        }
+
+        [data-theme="dark"] .chat-action {
+            background: #1a2a27;
+            border-color: #2a403a;
+            color: #97b5aa;
+        }
+
+        [data-theme="dark"] body {
+            background: radial-gradient(circle at top left, rgba(45, 212, 191, 0.06), transparent 24%),
+                        linear-gradient(180deg, #0f1a18 0%, #111d1a 100%);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        html {
+            transition: background 0.35s ease;
+        }
+
+        body,
+        .panel,
+        .message,
+        .insight-card,
+        .topic-card,
+        .hotel-card,
+        input,
+        select,
+        textarea,
+        button,
+        .chip,
+        .chat-action,
+        .tool-item,
+        .badge,
+        .status-badge,
+        .highlight-tag,
+        .hotel-type,
+        .hotel-rating,
+        .jump-link,
+        .quick-jumps {
+            transition: background 0.35s ease, border-color 0.35s ease, color 0.35s ease, box-shadow 0.35s ease;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(15, 139, 133, 0.1), transparent 24%),
+                linear-gradient(180deg, #f2fbf9 0%, #eef5f4 100%);
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .page {
+            max-width: 1480px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 290px minmax(0, 1fr);
+            gap: 20px;
+            min-height: calc(100vh - 48px);
+        }
+
+        .sidebar,
+        .main-panel {
+            min-height: 0;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .main-panel {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 18px;
+            min-width: 0;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(216, 231, 228, 0.92);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .brand-panel {
+            padding: 24px;
+        }
+
+        .brand-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .brand-icon {
+            width: 54px;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            border-radius: 18px;
+            color: #fff;
+            font-size: 24px;
+            background: linear-gradient(135deg, #10b4ad 0%, #0f8b85 100%);
+            box-shadow: 0 14px 28px rgba(15, 139, 133, 0.22);
+        }
+
+        .brand-copy h1 {
+            margin: 0 0 6px;
+            font-size: 24px;
+            line-height: 1.2;
+        }
+
+        .brand-copy p {
+            margin: 0;
+            color: var(--subtext);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .primary-btn,
+        .ghost-btn,
+        .inline-btn {
+            border: 0;
+            border-radius: 14px;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+
+        .primary-btn:hover,
+        .ghost-btn:hover,
+        .inline-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .primary-btn {
+            width: 100%;
+            padding: 13px 18px;
+            color: #fff;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--brand) 0%, #17b9b0 100%);
+            box-shadow: 0 12px 26px rgba(15, 139, 133, 0.24);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.64;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible,
+        a:focus-visible {
+            outline: 2px solid var(--brand);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        .btn-ripple {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-ripple::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+        }
+
+        .ghost-btn {
+            padding: 11px 16px;
+            color: var(--brand);
+            font-weight: 700;
+            background: var(--brand-soft);
+        }
+
+        .inline-btn {
+            padding: 11px 16px;
+            color: #fff;
+            font-weight: 700;
+            background: var(--brand);
+            box-shadow: 0 10px 22px rgba(15, 139, 133, 0.18);
+        }
+
+        .retry-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            padding: 8px 14px;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            color: #b42318;
+            background: #fff1f2;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .retry-btn:hover {
+            background: #fee2e2;
+            border-color: #fca5a5;
+        }
+
+        .error-message {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 12px 16px;
+            border-radius: 14px;
+            border: 1px solid #fecaca;
+            background: #fff1f2;
+            color: #b42318;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .error-icon {
+            flex: 0 0 auto;
+            font-size: 18px;
+        }
+
+        .network-banner {
+            display: none;
+            padding: 10px 18px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            background: #fef3c7;
+            color: #92400e;
+            border-bottom: 1px solid #fcd34d;
+        }
+
+        .network-banner.show {
+            display: block;
+        }
+
+        [data-theme="dark"] .network-banner {
+            background: #3d2010;
+            color: #fbbf24;
+            border-bottom-color: #78350f;
+        }
+
+        [data-theme="dark"] .retry-btn {
+            background: #3d1010;
+            border-color: #7f1d1d;
+            color: #fca5a5;
+        }
+
+        [data-theme="dark"] .retry-btn:hover {
+            background: #4d1515;
+        }
+
+        [data-theme="dark"] .error-message {
+            background: #3d1010;
+            border-color: #7f1d1d;
+            color: #fca5a5;
+        }
+
+        .section {
+            padding: 22px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .section-header h2,
+        .section-header h3 {
+            margin: 0;
+            font-size: 17px;
+        }
+
+        .badge,
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge {
+            color: var(--brand-deep);
+            background: var(--brand-soft);
+        }
+
+        .status-badge {
+            color: #166534;
+            background: #ecfdf3;
+        }
+
+        .field-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .field span {
+            color: var(--subtext);
+            font-size: 12px;
+        }
+
+        .field input,
+        .field select,
+        .composer textarea {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px 14px;
+            color: var(--text);
+            background: #fff;
+            outline: none;
+        }
+
+        .field input:focus,
+        .field select:focus,
+        .composer textarea:focus {
+            border-color: #79d5cc;
+            box-shadow: 0 0 0 4px rgba(121, 213, 204, 0.18);
+        }
+
+        .insight-list,
+        .quick-actions,
+        .topic-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .insight-list {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .insight-card {
+            padding: 16px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, #fbfffe 0%, #f3fbf9 100%);
+            border: 1px solid var(--line);
+        }
+
+        .insight-card strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 18px;
+        }
+
+        .insight-card p {
+            margin: 0;
+            color: var(--subtext);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .quick-actions {
+            grid-template-columns: 1fr;
+        }
+
+        .chip {
+            width: 100%;
+            text-align: left;
+            border: 1px solid transparent;
+            border-radius: 16px;
+            padding: 12px 14px;
+            color: var(--brand-deep);
+            background: #f2fffc;
+            transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+        }
+
+        .chip:hover {
+            border-color: #99e3db;
+            background: #e8fbf7;
+        }
+
+        .topic-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .topic-card {
+            padding: 18px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fcfb 100%);
+        }
+
+        .topic-card h4 {
+            margin: 0 0 10px;
+            font-size: 16px;
+        }
+
+        .topic-card p {
+            margin: 0 0 14px;
+            min-height: 66px;
+            color: var(--subtext);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .chat-shell {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            height: min(78vh, 980px);
+            max-height: min(78vh, 980px);
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .chat-head {
+            padding: 24px 24px 0;
+        }
+
+        .chat-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 10px;
+        }
+
+        .chat-title-row h2 {
+            margin: 0 0 6px;
+            font-size: 26px;
+            line-height: 1.2;
+        }
+
+        .chat-subtitle {
+            margin: 0;
+            color: var(--subtext);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .chat-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 9px 14px;
+            color: var(--subtext);
+            background: #fff;
+        }
+
+        .stream-status,
+        .tool-log {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            min-height: 22px;
+        }
+
+        .stream-status {
+            margin-top: 14px;
+        }
+
+        .status-pill,
+        .tool-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+        }
+
+        .status-pill {
+            color: #0f5e67;
+            background: #ebfbff;
+        }
+
+        .status-pill.error {
+            color: #b42318;
+            background: #fff1f2;
+        }
+
+        .status-pill.done {
+            color: #166534;
+            background: #ecfdf3;
+        }
+
+        .tool-log {
+            margin-top: 10px;
+        }
+
+        .tool-item {
+            color: var(--subtext);
+            border: 1px solid var(--line);
+            background: var(--soft);
+        }
+
+        .tool-item.running {
+            color: var(--brand-deep);
+            border-color: #8dded5;
+            background: #edfcf9;
+        }
+
+        .tool-item.done {
+            color: #166534;
+            border-color: #b7ebc2;
+            background: #effcf3;
+        }
+
+        .tool-item.error {
+            color: #b42318;
+            border-color: #fecaca;
+            background: #fff1f2;
+        }
+
+        .chat-log {
+            padding: 18px 24px 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            overflow: auto;
+            min-height: 0;
+            scrollbar-gutter: stable;
+        }
+
+        .message-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            animation: messageSlideIn 0.35s ease-out;
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-row.user {
+            justify-content: flex-end;
+        }
+
+        .avatar {
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 18px;
+            background: linear-gradient(135deg, #3bb8ff 0%, #5a72ff 100%);
+            box-shadow: 0 10px 18px rgba(54, 125, 255, 0.2);
+        }
+
+        .message-row.user .avatar {
+            background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+            box-shadow: 0 10px 18px rgba(249, 115, 22, 0.2);
+        }
+
+        .message-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: min(100%, 1040px);
+        }
+
+        .message {
+            position: relative;
+            max-width: 760px;
+            padding: 16px 18px;
+            border-radius: 22px;
+            line-height: 1.72;
+            white-space: pre-wrap;
+            word-break: break-word;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .message-actions {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .message:hover .message-actions,
+        .message:focus-within .message-actions {
+            opacity: 1;
+        }
+
+        .msg-action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            color: var(--subtext);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .msg-action-btn:hover {
+            background: var(--brand-soft);
+            border-color: var(--brand);
+            color: var(--brand-deep);
+        }
+
+        .msg-action-btn.copied {
+            background: #ecfdf3;
+            border-color: #86efac;
+            color: #166534;
+        }
+
+        .message.assistant {
+            border: 1px solid var(--line);
+            background: #fff;
+            border-top-left-radius: 10px;
+        }
+
+        .message.assistant :where(h1, h2, h3, h4, h5, h6) {
+            margin: 0.6em 0 0.3em;
+        }
+
+        .message.assistant :first-child {
+            margin-top: 0;
+        }
+
+        .message.assistant :last-child {
+            margin-bottom: 0;
+        }
+
+        .message.assistant ul,
+        .message.assistant ol {
+            margin: 0.4em 0;
+            padding-left: 1.4em;
+        }
+
+        .message.assistant li {
+            margin: 0.2em 0;
+        }
+
+        .message.assistant code {
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            background: var(--soft);
+            border: 1px solid var(--line);
+        }
+
+        .message.assistant pre {
+            margin: 0.5em 0;
+            padding: 14px 16px;
+            border-radius: 14px;
+            overflow-x: auto;
+            background: var(--soft);
+            border: 1px solid var(--line);
+            font-size: 0.88em;
+            line-height: 1.6;
+        }
+
+        .message.assistant pre code {
+            padding: 0;
+            border: 0;
+            background: none;
+        }
+
+        .message.assistant blockquote {
+            margin: 0.5em 0;
+            padding: 8px 14px;
+            border-left: 4px solid var(--brand);
+            background: var(--brand-soft);
+            border-radius: 0 10px 10px 0;
+        }
+
+        .message.assistant a {
+            color: var(--brand);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .message.assistant table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.5em 0;
+            font-size: 0.9em;
+        }
+
+        .message.assistant th,
+        .message.assistant td {
+            padding: 8px 12px;
+            border: 1px solid var(--line);
+            text-align: left;
+        }
+
+        .message.assistant th {
+            background: var(--soft);
+            font-weight: 700;
+        }
+
+        .message.assistant hr {
+            border: 0;
+            border-top: 1px solid var(--line);
+            margin: 0.8em 0;
+        }
+
+        .message.assistant strong {
+            color: var(--brand-deep);
+        }
+
+        [data-theme="dark"] .message.assistant strong {
+            color: var(--brand);
+        }
+
+        .message.user {
+            align-self: flex-end;
+            color: #fff;
+            background: linear-gradient(135deg, #dff8f4 0%, #c6f3ec 100%);
+            color: var(--text);
+            border-top-right-radius: 10px;
+        }
+
+        .message-meta {
+            padding: 0 4px;
+            color: #8aa09b;
+            font-size: 12px;
+        }
+
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 14px;
+            border-radius: 22px;
+            border: 1px solid var(--line);
+            background: #fff;
+            border-top-left-radius: 10px;
+        }
+
+        .typing-indicator .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--brand);
+            animation: typingBounce 1.4s ease-in-out infinite;
+        }
+
+        .typing-indicator .dot:nth-child(1) { animation-delay: 0s; }
+        .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+
+        [data-theme="dark"] .typing-indicator {
+            background: #1f302c;
+            border-color: #2a403a;
+        }
+
+        .message-row.user .message-meta {
+            text-align: right;
+        }
+
+        .recommendation-block {
+            display: grid;
+            gap: 14px;
+        }
+
+        .recommendation-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 0 4px;
+        }
+
+        .recommendation-title {
+            margin: 0;
+            font-size: 20px;
+            line-height: 1.3;
+        }
+
+        .recommendation-subtitle {
+            margin: 4px 0 0;
+            color: var(--subtext);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .recommendation-count {
+            color: var(--brand);
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .hotel-grid {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(300px, 360px);
+            gap: 16px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 4px 4px 10px;
+            scroll-snap-type: x proximity;
+            scrollbar-gutter: stable both-edges;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .hotel-grid::-webkit-scrollbar {
+            height: 10px;
+        }
+
+        .hotel-grid::-webkit-scrollbar-track {
+            background: #edf5f4;
+            border-radius: 999px;
+        }
+
+        .hotel-grid::-webkit-scrollbar-thumb {
+            background: #b8ded9;
+            border-radius: 999px;
+        }
+
+        .hotel-card {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdfd 100%);
+            box-shadow: var(--shadow-soft);
+            scroll-snap-align: start;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .hotel-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(15, 139, 133, 0.14);
+        }
+
+        .hotel-media {
+            position: relative;
+            aspect-ratio: 4 / 3;
+            overflow: hidden;
+            background:
+                linear-gradient(135deg, rgba(15, 139, 133, 0.1), rgba(15, 139, 133, 0.02)),
+                linear-gradient(180deg, #edf9f6 0%, #d8efea 100%);
+        }
+
+        .hotel-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: opacity 0.4s ease;
+        }
+
+        .hotel-media img.loading {
+            opacity: 0;
+        }
+
+        .hotel-media img.loaded {
+            opacity: 1;
+        }
+
+        .skeleton-card {
+            display: flex;
+            flex-direction: column;
+            min-width: 300px;
+            max-width: 360px;
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            overflow: hidden;
+            background: var(--panel);
+            box-shadow: var(--shadow-soft);
+            scroll-snap-align: start;
+        }
+
+        .skeleton-media {
+            aspect-ratio: 4 / 3;
+            background: linear-gradient(90deg, var(--soft) 25%, var(--line) 50%, var(--soft) 75%);
+            background-size: 200% 100%;
+            animation: skeletonShimmer 1.8s ease-in-out infinite;
+        }
+
+        .skeleton-content {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .skeleton-line {
+            height: 14px;
+            border-radius: 7px;
+            background: linear-gradient(90deg, var(--soft) 25%, var(--line) 50%, var(--soft) 75%);
+            background-size: 200% 100%;
+            animation: skeletonShimmer 1.8s ease-in-out infinite;
+        }
+
+        .skeleton-line.short { width: 45%; }
+        .skeleton-line.medium { width: 70%; }
+        .skeleton-line.long { width: 90%; }
+
+        @keyframes skeletonShimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .hotel-card-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            padding: 32px;
+            border: 2px dashed var(--line);
+            border-radius: 20px;
+            text-align: center;
+            color: var(--subtext);
+            gap: 10px;
+        }
+
+        .hotel-card-empty .empty-icon {
+            font-size: 40px;
+            opacity: 0.6;
+        }
+
+        .hotel-media::after {
+            content: "";
+            position: absolute;
+            inset: auto 0 0;
+            height: 40%;
+            background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.34) 100%);
+            pointer-events: none;
+        }
+
+        .hotel-chip-row {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            right: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            z-index: 1;
+        }
+
+        .hotel-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff8a3d 0%, #f97316 100%);
+            box-shadow: 0 8px 16px rgba(249, 115, 22, 0.22);
+        }
+
+        .hotel-chip.secondary {
+            background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+            box-shadow: 0 8px 16px rgba(34, 197, 94, 0.22);
+        }
+
+        .hotel-favorite {
+            width: 34px;
+            height: 34px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.42);
+            backdrop-filter: blur(10px);
+        }
+
+        .hotel-content {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .hotel-name-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .hotel-name {
+            margin: 0;
+            font-size: 18px;
+            line-height: 1.45;
+        }
+
+        .hotel-location {
+            margin: 6px 0 0;
+            color: var(--subtext);
+            font-size: 13px;
+        }
+
+        .hotel-type {
+            display: inline-flex;
+            flex: 0 0 auto;
+            align-items: center;
+            border-radius: 999px;
+            padding: 5px 9px;
+            color: var(--brand-deep);
+            background: var(--brand-soft);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .hotel-price-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .hotel-price {
+            color: var(--accent);
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .hotel-price small {
+            margin-left: 4px;
+            color: #9a7667;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .hotel-rating {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            color: #166534;
+            background: #effcf3;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .hotel-rating span {
+            color: #62806a;
+            font-weight: 500;
+        }
+
+        .highlight-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .highlight-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: var(--subtext);
+            background: var(--soft);
+            font-size: 12px;
+            border: 1px solid #e6f1ef;
+        }
+
+        .hotel-summary {
+            margin: 0;
+            min-height: 44px;
+            color: var(--subtext);
+            line-height: 1.65;
+            font-size: 13px;
+        }
+
+        .hotel-address {
+            margin: 0;
+            color: #7c918d;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .hotel-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .hotel-link {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 44px;
+            padding: 11px 14px;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .hotel-link.secondary {
+            color: var(--brand);
+            border: 1px solid #8dded5;
+            background: #fff;
+        }
+
+        .hotel-link.primary {
+            color: #fff;
+            background: linear-gradient(135deg, var(--brand) 0%, #17b9b0 100%);
+            box-shadow: 0 12px 22px rgba(15, 139, 133, 0.2);
+        }
+
+        .conv-list {
+            display: grid;
+            gap: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .conv-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 13px;
+            background: var(--soft);
+        }
+
+        .conv-item:hover {
+            border-color: var(--line);
+            background: var(--brand-soft);
+        }
+
+        .conv-item.active {
+            border-color: var(--brand);
+            background: var(--brand-soft);
+            font-weight: 700;
+        }
+
+        .conv-item-title {
+            flex: 1 1 auto;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+            color: var(--text);
+        }
+
+        .conv-item-date {
+            flex: 0 0 auto;
+            font-size: 11px;
+            color: var(--subtext);
+        }
+
+        .conv-item-delete {
+            flex: 0 0 auto;
+            width: 22px;
+            height: 22px;
+            display: grid;
+            place-items: center;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--subtext);
+            font-size: 14px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.15s ease, background 0.15s ease;
+        }
+
+        .conv-item:hover .conv-item-delete {
+            opacity: 1;
+        }
+
+        .conv-item-delete:hover {
+            background: #fee2e2;
+            color: #b42318;
+        }
+
+        .quick-jumps {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: linear-gradient(180deg, #fcfefe 0%, #f3faf9 100%);
+        }
+
+        .jump-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--brand);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .composer {
+            padding: 0 24px 24px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .scroll-bottom-btn {
+            position: absolute;
+            bottom: 140px;
+            right: 36px;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--line);
+            border-radius: 50%;
+            background: var(--panel);
+            color: var(--subtext);
+            box-shadow: var(--shadow-soft);
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(8px);
+            pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            z-index: 10;
+            font-size: 18px;
+        }
+
+        .scroll-bottom-btn.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .scroll-bottom-btn:hover {
+            background: var(--brand-soft);
+            border-color: var(--brand);
+            color: var(--brand-deep);
+        }
+
+        .cancel-stream-btn {
+            display: none;
+            padding: 6px 14px;
+            border: 1px solid #fecaca;
+            border-radius: 999px;
+            background: #fff1f2;
+            color: #b42318;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .cancel-stream-btn.visible {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        [data-theme="dark"] .scroll-bottom-btn {
+            background: var(--panel);
+        }
+
+        [data-theme="dark"] .cancel-stream-btn {
+            background: #3d1010;
+            border-color: #7f1d1d;
+            color: #fca5a5;
+        }
+
+        .composer textarea {
+            min-height: 102px;
+            resize: vertical;
+            line-height: 1.7;
+        }
+
+        .composer-foot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .char-count {
+            font-size: 12px;
+            color: var(--subtext);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .char-count.near-limit {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .quick-hint {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--subtext);
+        }
+
+        .quick-hint kbd {
+            display: inline-flex;
+            align-items: center;
+            padding: 1px 6px;
+            border-radius: 4px;
+            border: 1px solid var(--line);
+            background: var(--soft);
+            font-family: inherit;
+            font-size: 11px;
+        }
+
+        .hint {
+            color: var(--subtext);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .accent {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        @media (max-width: 1320px) {
+            .topic-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 1080px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                order: 2;
+            }
+
+            .main-panel {
+                order: 1;
+            }
+
+            .mobile-sidebar-toggle {
+                display: inline-flex !important;
+            }
+
+            .sidebar.collapsed {
+                display: none;
+            }
+        }
+
+        .mobile-sidebar-toggle {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: var(--panel);
+            color: var(--subtext);
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 780px) {
+            .page {
+                padding: 14px;
+                padding-bottom: max(14px, env(safe-area-inset-bottom));
+            }
+
+            .chat-title-row,
+            .composer-foot,
+            .recommendation-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .insight-list,
+            .topic-grid,
+            .hotel-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .chat-shell {
+                height: min(65vh, 700px);
+                max-height: min(65vh, 700px);
+            }
+
+            .hotel-grid {
+                grid-auto-columns: minmax(260px, 82vw);
+            }
+
+            .message-row {
+                align-items: flex-start;
+            }
+
+            .message {
+                max-width: 100%;
+            }
+
+            .brand-panel {
+                padding: 16px;
+            }
+
+            .brand-copy h1 {
+                font-size: 20px;
+            }
+
+            .section {
+                padding: 14px;
+            }
+
+            .chat-head {
+                padding: 14px 14px 0;
+            }
+
+            .chat-log {
+                padding: 12px 14px 16px;
+            }
+
+            .composer {
+                padding: 0 14px 14px;
+            }
+
+            .composer textarea {
+                min-height: 80px;
+            }
+
+            .quick-hint {
+                display: none;
+            }
+
+            .composer-foot {
+                flex-wrap: wrap;
+            }
+
+            .topic-card p {
+                min-height: auto;
+            }
+
+            .hotel-price {
+                font-size: 22px;
+            }
+
+            .hotel-name {
+                font-size: 16px;
+            }
+
+            .message-actions {
+                opacity: 1;
+            }
+
+            .msg-action-btn {
+                width: 36px;
+                height: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="workspace">
+            <aside class="sidebar">
+                <section class="panel brand-panel">
+                    <div class="brand-row">
+                        <div class="brand-icon">✦</div>
+                        <div class="brand-copy">
+                            <h1>AI 客服助手</h1>
+                            <p>给出解释、推荐酒店、补充可点击详情，一次回答里直接完成。</p>
+                        </div>
+                    </div>
+                    <button class="primary-btn" type="button" id="new-chat-btn">+ 新建对话</button>
+                </section>
+
+                <section class="panel section">
+                    <div class="section-header">
+                        <h2>访客上下文</h2>
+                        <span class="badge">调试输入</span>
+                    </div>
+                    <div class="field-grid">
+                        <label class="field">
+                            <span>用户 ID</span>
+                            <input id="user-id" value="guest_10001" />
+                        </label>
+                        <label class="field">
+                            <span>昵称</span>
+                            <input id="user-name" value="demo_guest" />
+                        </label>
+                        <label class="field">
+                            <span>角色</span>
+                            <select id="user-role">
+                                <option value="USER">USER</option>
+                                <option value="MERCHANT">MERCHANT</option>
+                                <option value="ADMIN">ADMIN</option>
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>房东 / 商家 ID</span>
+                            <input id="merchant-id" value="" placeholder="可留空" />
+                        </label>
+                    </div>
+                </section>
+
+                <section class="panel section">
+                    <div class="section-header">
+                        <h3>会话重点</h3>
+                        <span class="status-badge">实时流式</span>
+                    </div>
+                    <div class="insight-list">
+                        <article class="insight-card">
+                            <strong>酒店推荐</strong>
+                            <p>需要推荐时，直接展示带图片、价格、评分和跳转链接的卡片。</p>
+                        </article>
+                        <article class="insight-card">
+                            <strong>客服说明</strong>
+                            <p>文本回答继续保留，先给结论，再说明推荐依据和下一步建议。</p>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="panel section">
+                    <div class="section-header">
+                        <h3>快捷提问</h3>
+                        <span class="badge">/suggestions</span>
+                    </div>
+                    <div id="suggestions" class="quick-actions"></div>
+                </section>
+
+                <section class="panel section">
+                    <div class="section-header">
+                        <h3>历史对话</h3>
+                        <span class="badge" id="conv-count">0</span>
+                    </div>
+                    <div id="conv-list" class="conv-list"></div>
+                </section>
+            </aside>
+
+            <main class="main-panel">
+                <button class="mobile-sidebar-toggle" type="button" id="sidebar-toggle" title="显示/隐藏侧边栏">☰ 菜单</button>
+                <section class="panel section">
+                    <div class="section-header">
+                        <h2>客服场景模块</h2>
+                        <span class="badge">推荐展示</span>
+                    </div>
+                    <div class="topic-grid">
+                        <article class="topic-card">
+                            <h4>预算筛选推荐</h4>
+                            <p>适合按城市、区域、预算、房型需求找酒店，返回带跳转按钮的推荐卡片。</p>
+                            <button class="ghost-btn preset" type="button" data-message="帮我推荐深圳 500 到 1000 元之间，带早餐，适合商务出行的双床房酒店">生成酒店卡片</button>
+                        </article>
+                        <article class="topic-card">
+                            <h4>亲子出行推荐</h4>
+                            <p>适合家庭和老人同行，重点关注床型、早餐、周边交通和配套设施。</p>
+                            <button class="ghost-btn preset" type="button" data-message="想找适合一家三口入住的亲子酒店，最好有早餐和停车位，预算 800 以内">生成酒店卡片</button>
+                        </article>
+                        <article class="topic-card">
+                            <h4>热门酒店对比</h4>
+                            <p>适合快速查看热门房源，直接横向对比价格、评分、设施亮点和详情入口。</p>
+                            <button class="ghost-btn preset" type="button" data-message="给我推荐几家热门酒店，并说明各自适合什么类型的客人">生成酒店卡片</button>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="panel chat-shell">
+                    <button class="scroll-bottom-btn" id="scroll-bottom-btn" type="button" title="滚动到底部" aria-label="滚动到底部">↓</button>
+                    <div class="chat-head">
+                        <div class="chat-title-row">
+                            <div>
+                                <h2>酒店推荐对话区</h2>
+                                <p class="chat-subtitle">
+                                    当客服需要推荐酒店时，除了文字说明，还会在回答下方展示可点击的酒店卡片。
+                                </p>
+                            </div>
+                            <div class="chat-actions">
+                                <button class="chat-action" type="button" id="theme-toggle" title="切换深色/浅色模式" aria-label="切换主题">🌓</button>
+                                <button class="chat-action" type="button" id="sound-toggle" title="回答完成时播放提示音" aria-label="切换提示音">🔔</button>
+                                <button class="chat-action" type="button" id="preview-cards-btn">预览推荐卡片</button>
+                                <div class="chat-action">会话 <span id="conversation-id">未创建</span></div>
+                                <div class="chat-action">模式 <span class="accent">流式回答</span></div>
+                            </div>
+                        </div>
+                        <div class="stream-status" id="stream-status" role="status" aria-live="polite"></div>
+                        <button class="cancel-stream-btn" id="cancel-stream-btn" type="button">⏹ 停止生成</button>
+                        <div class="tool-log" id="tool-log"></div>
+                    </div>
+
+                    <div id="chat-log" class="chat-log" role="log" aria-label="对话记录"></div>
+
+                    <div class="composer">
+                        <textarea id="message-input" maxlength="2000" aria-label="输入消息" placeholder="例如：推荐几家上海静安区 600~1000 元、带早餐、评分高一点的酒店，并给我详情链接"></textarea>
+                        <div class="composer-foot">
+                            <div class="quick-hint">
+                                <span><kbd>Enter</kbd> 发送</span>
+                                <span><kbd>Shift+Enter</kbd> 换行</span>
+                                <span><kbd>Esc</kbd> 清空</span>
+                            </div>
+                            <span id="char-count" class="char-count">0 / 2000</span>
+                            <button id="send-btn" class="inline-btn" type="button">发送消息</button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        /* global marked */
+        if (typeof marked !== "undefined") {
+            marked.setOptions({
+                breaks: true,
+                gfm: true,
+            });
+        }
+
+        function renderMarkdown(text) {
+            if (!text) return "";
+            if (typeof marked !== "undefined") {
+                try {
+                    const html = marked.parse(text);
+                    return typeof html === "string" ? html : String(text);
+                } catch (_e) {
+                    return escapeHtml(String(text));
+                }
+            }
+            return escapeHtml(String(text)).replace(/\n/g, "<br>");
+        }
+
+        const chatLog = document.getElementById("chat-log");
+        const messageInput = document.getElementById("message-input");
+        const sendBtn = document.getElementById("send-btn");
+        const newChatBtn = document.getElementById("new-chat-btn");
+        const previewCardsBtn = document.getElementById("preview-cards-btn");
+        const suggestionsEl = document.getElementById("suggestions");
+        const conversationIdEl = document.getElementById("conversation-id");
+        const streamStatusEl = document.getElementById("stream-status");
+        const toolLogEl = document.getElementById("tool-log");
+
+        const DEFAULT_ASSISTANT_GREETING = "你好，我是客服推荐助手。你可以直接让我推荐酒店，我会给出筛选建议，并在合适时展示带详情链接的酒店卡片。";
+        const DEMO_RECOMMENDATIONS = {
+            title: "深圳双床房推荐 (3)",
+            subtitle: "深圳 · 500-1000 元 · 含早餐 · 双床房",
+            count: 3,
+            cards: [
+                {
+                    id: "demo-1",
+                    name: "深圳龙华观澜大道亚朵酒店",
+                    location: "龙华区 · 观澜大道",
+                    address: "深圳市龙华区观澜大道 188 号",
+                    type: "舒适优选",
+                    featured: true,
+                    rating: "4.8",
+                    reviewCount: 268,
+                    priceLabel: "¥599 起/晚",
+                    summary: "靠近观澜商圈，双床房充足，早餐口碑稳定，适合商务和短途休息。",
+                    highlights: ["含早餐", "双床房", "免费 Wi-Fi", "停车方便", "近商圈"],
+                    imageUrl: "",
+                    detailUrl: "https://example.com/demo/hotel-1",
+                    bookingUrl: "https://example.com/demo/hotel-1/book",
+                    mapUrl: "https://uri.amap.com/search?keyword=%E6%B7%B1%E5%9C%B3%E9%BE%99%E5%8D%8E%E8%A7%82%E6%BE%9C%E5%A4%A7%E9%81%93%E4%BA%9A%E6%9C%B5%E9%85%92%E5%BA%97",
+                    followUpPrompt: "请详细介绍深圳龙华观澜大道亚朵酒店的双床房和早餐安排",
+                },
+                {
+                    id: "demo-2",
+                    name: "深圳龙岗大运中心希尔顿欢朋酒店",
+                    location: "龙岗区 · 大运中心",
+                    address: "深圳市龙岗区龙翔大道 66 号",
+                    type: "高性价比",
+                    featured: false,
+                    rating: "4.7",
+                    reviewCount: 193,
+                    priceLabel: "¥699 起/晚",
+                    summary: "通勤方便，双床房面积更宽裕，适合带同事出行或周边短住。",
+                    highlights: ["含早餐", "双床房", "健身房", "会议区", "近地铁"],
+                    imageUrl: "",
+                    detailUrl: "https://example.com/demo/hotel-2",
+                    bookingUrl: "https://example.com/demo/hotel-2/book",
+                    mapUrl: "https://uri.amap.com/search?keyword=%E6%B7%B1%E5%9C%B3%E9%BE%99%E5%B2%97%E5%A4%A7%E8%BF%90%E4%B8%AD%E5%BF%83%E5%B8%8C%E5%B0%94%E9%A1%BF%E6%AC%A2%E6%9C%8B%E9%85%92%E5%BA%97",
+                    followUpPrompt: "请对比一下深圳龙岗大运中心希尔顿欢朋酒店和其他两家酒店的区别",
+                },
+                {
+                    id: "demo-3",
+                    name: "深圳宝安国际会展中心亚朵酒店",
+                    location: "宝安区 · 国际会展中心",
+                    address: "深圳市宝安区展城路 28 号",
+                    type: "舒适优选",
+                    featured: false,
+                    rating: "4.6",
+                    reviewCount: 155,
+                    priceLabel: "¥799 起/晚",
+                    summary: "靠近会展中心，适合参展和商务出差人群，双床房稳定，周边出行顺手。",
+                    highlights: ["含早餐", "双床房", "洗衣服务", "接驳方便", "商务出行"],
+                    imageUrl: "",
+                    detailUrl: "https://example.com/demo/hotel-3",
+                    bookingUrl: "https://example.com/demo/hotel-3/book",
+                    mapUrl: "https://uri.amap.com/search?keyword=%E6%B7%B1%E5%9C%B3%E5%AE%9D%E5%AE%89%E5%9B%BD%E9%99%85%E4%BC%9A%E5%B1%95%E4%B8%AD%E5%BF%83%E4%BA%9A%E6%9C%B5%E9%85%92%E5%BA%97",
+                    followUpPrompt: "请继续介绍深圳宝安国际会展中心亚朵酒店的早餐和交通",
+                },
+            ],
+        };
+        const FALLBACK_CARD_IMAGE =
+            "data:image/svg+xml;utf8," +
+            encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+                    <defs>
+                        <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+                            <stop offset="0%" stop-color="#d8f5ef"/>
+                            <stop offset="100%" stop-color="#9edfd4"/>
+                        </linearGradient>
+                    </defs>
+                    <rect width="800" height="600" fill="url(#bg)"/>
+                    <rect x="82" y="122" width="636" height="348" rx="34" fill="#ffffff" opacity="0.78"/>
+                    <rect x="126" y="176" width="236" height="212" rx="18" fill="#dff8f3"/>
+                    <rect x="398" y="182" width="198" height="26" rx="13" fill="#bceee5"/>
+                    <rect x="398" y="228" width="154" height="20" rx="10" fill="#d6f6f0"/>
+                    <rect x="398" y="280" width="228" height="18" rx="9" fill="#c8f1ea"/>
+                    <rect x="398" y="316" width="202" height="18" rx="9" fill="#d6f6f0"/>
+                    <rect x="398" y="376" width="144" height="42" rx="21" fill="#0f8b85"/>
+                </svg>
+            `);
+
+        let conversationId = "";
+        let reloadToken = "";
+        let conversationTitle = "";
+
+        const CONV_STORAGE_KEY = "roomos-conversations";
+
+        function loadConversations() {
+            try {
+                return JSON.parse(localStorage.getItem(CONV_STORAGE_KEY) || "[]");
+            } catch (_e) {
+                return [];
+            }
+        }
+
+        function saveConversations(convs) {
+            try {
+                localStorage.setItem(CONV_STORAGE_KEY, JSON.stringify(convs.slice(0, 50)));
+            } catch (_e) {}
+        }
+
+        function saveCurrentConversation() {
+            if (!conversationId) return;
+            const convs = loadConversations();
+            const existing = convs.findIndex((c) => c.id === conversationId);
+            const entry = {
+                id: conversationId,
+                title: conversationTitle || "新对话",
+                updatedAt: Date.now(),
+            };
+            if (existing >= 0) {
+                convs[existing] = entry;
+            } else {
+                convs.unshift(entry);
+            }
+            saveConversations(convs);
+            renderConversationList();
+        }
+
+        function deleteConversation(convId) {
+            const convs = loadConversations().filter((c) => c.id !== convId);
+            saveConversations(convs);
+            if (conversationId === convId) {
+                clearConversation();
+            }
+            renderConversationList();
+        }
+
+        function switchConversation(convId) {
+            if (convId === conversationId) return;
+            conversationId = convId;
+            conversationIdEl.textContent = convId ? convId.slice(0, 8) : "未创建";
+            chatLog.innerHTML = "";
+            resetToolLog();
+            setStreamStatus("", "");
+            const convs = loadConversations();
+            const found = convs.find((c) => c.id === convId);
+            conversationTitle = found ? found.title : "";
+            renderAssistantGreeting();
+            renderConversationList();
+        }
+
+        function renderConversationList() {
+            const listEl = document.getElementById("conv-list");
+            const countEl = document.getElementById("conv-count");
+            const convs = loadConversations();
+            countEl.textContent = convs.length;
+
+            if (!convs.length) {
+                listEl.innerHTML = '<span class="hint" style="padding:8px 0;display:block;">暂无历史对话</span>';
+                return;
+            }
+
+            listEl.innerHTML = convs
+                .map((c) => {
+                    const activeClass = c.id === conversationId ? " active" : "";
+                    const dateStr = new Date(c.updatedAt).toLocaleDateString("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+                    return `<div class="conv-item${activeClass}" data-id="${c.id}" onclick="switchConversation('${c.id}')">
+                        <span class="conv-item-title">${escapeHtml(c.title || "新对话")}</span>
+                        <span class="conv-item-date">${dateStr}</span>
+                        <button class="conv-item-delete" onclick="event.stopPropagation();deleteConversation('${c.id}')" title="删除">×</button>
+                    </div>`;
+                })
+                .join("");
+        }
+
+        function getUserContext() {
+            const merchantId = document.getElementById("merchant-id").value.trim();
+            return {
+                id: document.getElementById("user-id").value.trim(),
+                username: document.getElementById("user-name").value.trim(),
+                role: document.getElementById("user-role").value,
+                merchantId: merchantId || null,
+            };
+        }
+
+        function getTimeLabel() {
+            return new Date().toLocaleTimeString("zh-CN", {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+        }
+
+        function createMessageRow(role, content) {
+            const row = document.createElement("div");
+            row.className = `message-row ${role}`;
+
+            const stack = document.createElement("div");
+            stack.className = "message-stack";
+
+            const bubble = document.createElement("div");
+            bubble.className = `message ${role}`;
+            if (role === "assistant") {
+                bubble.innerHTML = renderMarkdown(content || "");
+                const actions = document.createElement("div");
+                actions.className = "message-actions";
+                const copyBtn = document.createElement("button");
+                copyBtn.className = "msg-action-btn";
+                copyBtn.innerHTML = "📋";
+                copyBtn.title = "复制回答";
+                copyBtn.setAttribute("aria-label", "复制回答");
+                copyBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const rawText = bubble._rawText || bubble.textContent || "";
+                    navigator.clipboard.writeText(rawText).then(() => {
+                        copyBtn.innerHTML = "✅";
+                        copyBtn.classList.add("copied");
+                        setTimeout(() => {
+                            copyBtn.innerHTML = "📋";
+                            copyBtn.classList.remove("copied");
+                        }, 2000);
+                    }).catch(() => {});
+                });
+                actions.appendChild(copyBtn);
+                bubble.appendChild(actions);
+            } else {
+                bubble.textContent = content || "";
+            }
+            stack.appendChild(bubble);
+
+            const meta = document.createElement("div");
+            meta.className = "message-meta";
+            meta.textContent = getTimeLabel();
+            stack.appendChild(meta);
+
+            if (role === "assistant") {
+                const avatar = document.createElement("div");
+                avatar.className = "avatar";
+                avatar.textContent = "✦";
+                row.appendChild(avatar);
+                row.appendChild(stack);
+            } else {
+                row.appendChild(stack);
+                const avatar = document.createElement("div");
+                avatar.className = "avatar";
+                avatar.textContent = "我";
+                row.appendChild(avatar);
+            }
+
+            chatLog.appendChild(row);
+            chatLog.scrollTop = chatLog.scrollHeight;
+            return { row, bubble, stack, meta };
+        }
+
+        function appendUserMessage(content) {
+            return createMessageRow("user", content);
+        }
+
+        function appendAssistantMessage(content) {
+            return createMessageRow("assistant", content);
+        }
+
+        let typingElem = null;
+
+        function showTypingIndicator() {
+            if (typingElem) return;
+            const row = document.createElement("div");
+            row.className = "message-row assistant";
+            const avatar = document.createElement("div");
+            avatar.className = "avatar";
+            avatar.textContent = "✦";
+            const indicator = document.createElement("div");
+            indicator.className = "typing-indicator";
+            indicator.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+            row.appendChild(avatar);
+            row.appendChild(indicator);
+            chatLog.appendChild(row);
+            chatLog.scrollTop = chatLog.scrollHeight;
+            typingElem = row;
+            return row;
+        }
+
+        function removeTypingIndicator() {
+            if (typingElem) {
+                typingElem.remove();
+                typingElem = null;
+            }
+        }
+
+        function setStreamStatus(label, tone = "") {
+            streamStatusEl.innerHTML = "";
+            if (!label) {
+                return;
+            }
+            const pill = document.createElement("div");
+            pill.className = `status-pill ${tone}`.trim();
+            pill.textContent = label;
+            streamStatusEl.appendChild(pill);
+        }
+
+        function resetToolLog() {
+            toolLogEl.innerHTML = "";
+        }
+
+        function upsertToolItem(tool, label, tone, summary = "") {
+            const itemId = `tool-${tool}`;
+            let item = document.getElementById(itemId);
+            if (!item) {
+                item = document.createElement("div");
+                item.id = itemId;
+                item.className = "tool-item";
+                toolLogEl.appendChild(item);
+            }
+            item.className = `tool-item ${tone}`.trim();
+            item.textContent = summary ? `${label} · ${summary}` : label;
+        }
+
+        function retryLastMessage() {
+            if (lastFailedMessage) {
+                const msg = lastFailedMessage;
+                lastFailedMessage = null;
+                sendMessage(msg);
+            }
+        }
+
+        function clearConversation() {
+            conversationId = "";
+            conversationTitle = "";
+            conversationIdEl.textContent = "未创建";
+            chatLog.innerHTML = "";
+            resetToolLog();
+            setStreamStatus("", "");
+            renderAssistantGreeting();
+            renderConversationList();
+        }
+
+        function renderAssistantGreeting() {
+            appendAssistantMessage(DEFAULT_ASSISTANT_GREETING);
+        }
+
+        function renderPreviewConversation() {
+            clearConversation();
+            appendUserMessage("深圳地区 500~1000 元内，带早餐、双床房的酒店推荐一下");
+            const assistantEntry = appendAssistantMessage(
+                "好的，我先按照深圳、500~1000 元、含早餐、双床房这几个条件给你整理了一组更适合直接查看的酒店推荐。你可以先看卡片里的价格、评分和亮点，再决定要不要点进详情。"
+            );
+            renderRecommendations(assistantEntry.stack, DEMO_RECOMMENDATIONS);
+            setStreamStatus("当前为本地预览卡片", "done");
+        }
+
+        function normalizeUrl(url) {
+            if (!url || typeof url !== "string") {
+                return "";
+            }
+            const trimmed = url.trim();
+            if (!trimmed) {
+                return "";
+            }
+            const localhostPropertyMatch = trimmed.match(/^https?:\/\/localhost(?::\d+)?(\/property\/[^?#]+(?:[?#].*)?)$/i);
+            if (localhostPropertyMatch) {
+                return `http://localhost:5400${localhostPropertyMatch[1]}`;
+            }
+            if (/^\/property\/[^?#]+(?:[?#].*)?$/i.test(trimmed)) {
+                return `http://localhost:5400${trimmed}`;
+            }
+            if (/^https?:\/\//i.test(trimmed)) {
+                return trimmed;
+            }
+            return "";
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#39;");
+        }
+
+        function buildActionUrl(card) {
+            return normalizeUrl(card.bookingUrl) || normalizeUrl(card.detailUrl) || normalizeUrl(card.mapUrl);
+        }
+
+        function buildSecondaryUrl(card) {
+            return normalizeUrl(card.detailUrl) || normalizeUrl(card.mapUrl) || "";
+        }
+
+        function buildQuickJumpLinks(recommendations) {
+            const links = [];
+            const seen = new Set();
+
+            (recommendations.cards || []).forEach((card) => {
+                const location = card.location || card.address;
+                if (location && !seen.has(location)) {
+                    seen.add(location);
+                    links.push({
+                        label: location,
+                        href: normalizeUrl(card.mapUrl),
+                    });
+                }
+            });
+
+            (recommendations.cards || []).forEach((card) => {
+                (card.highlights || []).slice(0, 2).forEach((tag) => {
+                    if (!tag || seen.has(tag)) {
+                        return;
+                    }
+                    seen.add(tag);
+                    links.push({
+                        label: tag,
+                        href: normalizeUrl(card.detailUrl) || normalizeUrl(card.mapUrl),
+                    });
+                });
+            });
+
+            return links.slice(0, 4);
+        }
+
+        const lazyImageObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                const img = entry.target;
+                const src = img.dataset.src;
+                if (src) {
+                    img.src = src;
+                    img.onload = () => img.classList.replace("loading", "loaded");
+                    img.onerror = () => {
+                        img.src = FALLBACK_CARD_IMAGE;
+                        img.classList.add("loaded");
+                    };
+                } else {
+                    img.classList.add("loaded");
+                }
+                lazyImageObserver.unobserve(img);
+            });
+        }, { rootMargin: "200px" });
+
+        function renderRecommendations(container, recommendations) {
+            if (!recommendations || !Array.isArray(recommendations.cards) || !recommendations.cards.length) {
+                return;
+            }
+
+            const block = document.createElement("section");
+            block.className = "recommendation-block";
+
+            const header = document.createElement("div");
+            header.className = "recommendation-header";
+            header.innerHTML = `
+                <div>
+                    <h3 class="recommendation-title">${recommendations.title || "酒店推荐"}</h3>
+                    ${recommendations.subtitle ? `<p class="recommendation-subtitle">${recommendations.subtitle}</p>` : ""}
+                </div>
+                <div class="recommendation-count">${recommendations.count || recommendations.cards.length} 家可查看</div>
+            `;
+            block.appendChild(header);
+
+            const grid = document.createElement("div");
+            grid.className = "hotel-grid";
+
+            recommendations.cards.forEach((card, index) => {
+                const article = document.createElement("article");
+                article.className = "hotel-card";
+
+                const chipClass = card.featured || index === 0 ? "hotel-chip" : "hotel-chip secondary";
+                const chipLabel = card.featured || index === 0 ? "推荐优先" : "可重点看";
+                const highlights = Array.isArray(card.highlights) ? card.highlights.filter(Boolean).slice(0, 6) : [];
+                const secondaryUrl = buildSecondaryUrl(card);
+                const primaryUrl = buildActionUrl(card);
+                const ratingText = card.rating ? `${card.rating} 分` : "待补充";
+                const reviewText = Number.isFinite(card.reviewCount) ? `${card.reviewCount} 条评价` : "客服推荐";
+                const locationText = card.location || card.address || "";
+                const summaryText = card.summary || "适合继续查看详情、比价和咨询具体入住条件。";
+                const priceText = card.priceLabel || "价格待咨询";
+                const priceSmallText = card.priceLabel ? "" : "可咨询客服";
+
+                article.innerHTML = `
+                    <div class="hotel-media">
+                        <img src="${FALLBACK_CARD_IMAGE}" data-src="${normalizeUrl(card.imageUrl)}" alt="${escapeHtml(card.name || "酒店图片")}" class="loading" onerror="this.src='${FALLBACK_CARD_IMAGE}';this.classList.add('loaded');" />
+                        <div class="hotel-chip-row">
+                            <span class="${chipClass}">${escapeHtml(chipLabel)}</span>
+                            <span class="hotel-favorite">♡</span>
+                        </div>
+                    </div>
+                    <div class="hotel-content">
+                        <div class="hotel-name-row">
+                            <div>
+                                <h4 class="hotel-name">${escapeHtml(card.name || "酒店推荐")}</h4>
+                                <p class="hotel-location">${escapeHtml(locationText || "位置待补充")}</p>
+                            </div>
+                            ${card.type ? `<span class="hotel-type">${escapeHtml(card.type)}</span>` : ""}
+                        </div>
+                        <div class="hotel-price-row">
+                            <div class="hotel-price">${escapeHtml(priceText)}${priceSmallText ? `<small>${escapeHtml(priceSmallText)}</small>` : ""}</div>
+                            <div class="hotel-rating">★ ${escapeHtml(ratingText)}<span>${escapeHtml(reviewText)}</span></div>
+                        </div>
+                        ${highlights.length ? `<div class="highlight-list">${highlights.map((tag) => `<span class="highlight-tag">${escapeHtml(tag)}</span>`).join("")}</div>` : ""}
+                        <p class="hotel-summary">${escapeHtml(summaryText)}</p>
+                        ${card.address ? `<p class="hotel-address">${escapeHtml(card.address)}</p>` : ""}
+                        <div class="hotel-actions">
+                            <a class="hotel-link secondary" href="${secondaryUrl || "#"}" target="_blank" rel="noreferrer noopener">${secondaryUrl ? "查看详情" : "查看说明"}</a>
+                            <a class="hotel-link primary" href="${primaryUrl || secondaryUrl || "#"}" target="_blank" rel="noreferrer noopener">${primaryUrl || secondaryUrl ? "立即前往" : "继续咨询"}</a>
+                        </div>
+                    </div>
+                `;
+
+                const [secondaryLink, primaryLink] = article.querySelectorAll(".hotel-link");
+                if (!secondaryUrl) {
+                    secondaryLink.removeAttribute("href");
+                    secondaryLink.setAttribute("role", "button");
+                    secondaryLink.addEventListener("click", (event) => {
+                        event.preventDefault();
+                        messageInput.value = card.followUpPrompt || `请详细介绍一下${card.name || "这家酒店"}`;
+                        messageInput.focus();
+                    });
+                }
+                if (!(primaryUrl || secondaryUrl)) {
+                    primaryLink.removeAttribute("href");
+                    primaryLink.setAttribute("role", "button");
+                    primaryLink.addEventListener("click", (event) => {
+                        event.preventDefault();
+                        messageInput.value = card.followUpPrompt || `请详细介绍一下${card.name || "这家酒店"}`;
+                        messageInput.focus();
+                    });
+                }
+
+                grid.appendChild(article);
+            });
+
+            block.appendChild(grid);
+
+            grid.querySelectorAll("img[data-src]").forEach((img) => {
+                lazyImageObserver.observe(img);
+            });
+
+            const quickLinks = buildQuickJumpLinks(recommendations);
+            if (quickLinks.length) {
+                const quickJump = document.createElement("div");
+                quickJump.className = "quick-jumps";
+                quickLinks.forEach((item) => {
+                    const link = document.createElement("a");
+                    link.className = "jump-link";
+                    link.textContent = item.label;
+                    link.href = item.href || "#";
+                    if (item.href) {
+                        link.target = "_blank";
+                        link.rel = "noreferrer noopener";
+                    } else {
+                        link.addEventListener("click", (event) => {
+                            event.preventDefault();
+                        });
+                    }
+                    quickJump.appendChild(link);
+                });
+                block.appendChild(quickJump);
+            }
+
+            container.appendChild(block);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        async function loadSuggestions() {
+            try {
+                const response = await fetch("/suggestions");
+                const suggestions = await response.json();
+                suggestionsEl.innerHTML = "";
+                (suggestions || []).forEach((text) => {
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "chip";
+                    button.textContent = text;
+                    button.addEventListener("click", () => {
+                        messageInput.value = text;
+                        messageInput.focus();
+                    });
+                    suggestionsEl.appendChild(button);
+                });
+            } catch (error) {
+                suggestionsEl.innerHTML = '<span class="hint">快捷问题加载失败</span>';
+            }
+        }
+
+        let lastFailedMessage = null;
+        let streamAbortController = null;
+        let soundEnabled = localStorage.getItem("roomos-sound") !== "off";
+
+        const scrollBottomBtn = document.getElementById("scroll-bottom-btn");
+        const cancelStreamBtn = document.getElementById("cancel-stream-btn");
+
+        function initScrollBottomButton() {
+            chatLog.addEventListener("scroll", () => {
+                const isNearBottom = chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight < 200;
+                scrollBottomBtn.classList.toggle("visible", !isNearBottom && chatLog.scrollHeight > chatLog.clientHeight);
+            });
+            scrollBottomBtn.addEventListener("click", () => {
+                chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: "smooth" });
+            });
+        }
+
+        function cancelStream() {
+            if (streamAbortController) {
+                streamAbortController.abort();
+                streamAbortController = null;
+            }
+        }
+
+        cancelStreamBtn.addEventListener("click", () => {
+            cancelStream();
+            cancelStreamBtn.classList.remove("visible");
+            setStreamStatus("已停止", "");
+            sendBtn.disabled = false;
+            sendBtn.textContent = "发送消息";
+        });
+
+        async function sendMessage(presetMessage) {
+            const message = (presetMessage || messageInput.value).trim();
+            if (!message) {
+                messageInput.focus();
+                return;
+            }
+
+            appendUserMessage(message);
+            if (!conversationTitle) {
+                conversationTitle = message.slice(0, 40) + (message.length > 40 ? "…" : "");
+            }
+            messageInput.value = "";
+            updateCharCount();
+            autoResizeTextarea();
+            sendBtn.disabled = true;
+            sendBtn.textContent = "生成中...";
+            setStreamStatus("正在连接", "");
+            resetToolLog();
+            cancelStreamBtn.classList.add("visible");
+            showTypingIndicator();
+            const assistantEntry = appendAssistantMessage("");
+            let recommendations = null;
+
+            streamAbortController = new AbortController();
+
+            try {
+                const response = await fetch("/chat/stream", {
+                    signal: streamAbortController.signal,
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        message,
+                        conversationId,
+                        userContext: getUserContext(),
+                    }),
+                });
+                if (!response.ok) {
+                    throw new Error("请求失败");
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let buffer = "";
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        break;
+                    }
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const events = buffer.split("\n\n");
+                    buffer = events.pop() || "";
+
+                    for (const event of events) {
+                        const line = event
+                            .split("\n")
+                            .find((item) => item.startsWith("data: "));
+                        if (!line) {
+                            continue;
+                        }
+
+                        const payload = JSON.parse(line.slice(6));
+                        if (payload.type === "meta") {
+                            conversationId = payload.conversationId || conversationId;
+                            conversationIdEl.textContent = conversationId ? conversationId.slice(0, 8) : "未创建";
+                            setStreamStatus("已连接，等待结果", "");
+                            continue;
+                        }
+
+                        if (payload.type === "status") {
+                            setStreamStatus(payload.label || "处理中", "");
+                            continue;
+                        }
+
+                        if (payload.type === "tool_start") {
+                            removeTypingIndicator();
+                            upsertToolItem(payload.tool, payload.label || payload.tool, "running");
+                            setStreamStatus(payload.label || "正在调用工具", "");
+                            continue;
+                        }
+
+                        if (payload.type === "tool_end") {
+                            upsertToolItem(
+                                payload.tool,
+                                payload.label || payload.tool,
+                                payload.status === "error" ? "error" : "done",
+                                payload.summary || ""
+                            );
+                            setStreamStatus(
+                                payload.status === "error" ? "工具返回错误" : "工具调用完成",
+                                payload.status === "error" ? "error" : ""
+                            );
+                            continue;
+                        }
+
+                        if (payload.type === "chunk") {
+                            removeTypingIndicator();
+                            assistantEntry._rawText = (assistantEntry._rawText || "") + (payload.content || "");
+                            assistantEntry.bubble._rawText = assistantEntry._rawText;
+                            assistantEntry.bubble.innerHTML = renderMarkdown(assistantEntry._rawText);
+                            if (assistantEntry._rawText.trim()) {
+                                setStreamStatus("正在输出回答", "");
+                            }
+                            chatLog.scrollTop = chatLog.scrollHeight;
+                            continue;
+                        }
+
+                        if (payload.type === "done") {
+                            recommendations = payload.recommendations || null;
+                            if (assistantEntry._rawText) {
+                                assistantEntry.bubble.innerHTML = renderMarkdown(assistantEntry._rawText);
+                            }
+                            setStreamStatus("回答完成", "done");
+                            saveCurrentConversation();
+                            playCompletionSound();
+                            continue;
+                        }
+
+                        if (payload.type === "error") {
+                            throw new Error(payload.error || "请求失败");
+                        }
+                    }
+                }
+
+                if (!(assistantEntry._rawText || "").trim() && !assistantEntry.bubble.textContent.trim()) {
+                    assistantEntry.bubble.innerHTML = renderMarkdown("服务已响应，但没有返回可展示内容。");
+                    setStreamStatus("未返回可展示内容", "error");
+                }
+
+                if (recommendations) {
+                    renderRecommendations(assistantEntry.stack, recommendations);
+                }
+            } catch (error) {
+                removeTypingIndicator();
+                if (error.name === "AbortError") {
+                    assistantEntry.bubble.innerHTML = renderMarkdown("_已停止生成。_");
+                    setStreamStatus("已停止", "");
+                    return;
+                }
+                lastFailedMessage = message;
+                assistantEntry.bubble.innerHTML = `
+                    <div class="error-message">
+                        <span class="error-icon">⚠️</span>
+                        <div>
+                            <strong>请求失败</strong><br>${escapeHtml(error.message)}
+                            <br><button class="retry-btn" onclick="retryLastMessage()" type="button">🔄 重新发送</button>
+                        </div>
+                    </div>`;
+                setStreamStatus("请求失败", "error");
+            } finally {
+                streamAbortController = null;
+                cancelStreamBtn.classList.remove("visible");
+                sendBtn.disabled = false;
+                sendBtn.textContent = "发送消息";
+            }
+        }
+
+        async function initLiveReload() {
+            try {
+                const response = await fetch("/__dev_reload__", { cache: "no-store" });
+                const data = await response.json();
+                if (!data.enabled) {
+                    return;
+                }
+                reloadToken = data.reloadToken || "";
+                window.setInterval(async () => {
+                    try {
+                        const checkResponse = await fetch("/__dev_reload__", { cache: "no-store" });
+                        const checkData = await checkResponse.json();
+                        if (checkData.enabled && reloadToken && checkData.reloadToken !== reloadToken) {
+                            window.location.reload();
+                        }
+                    } catch (error) {
+                    }
+                }, 1000);
+            } catch (error) {
+            }
+        }
+
+        sendBtn.addEventListener("click", () => sendMessage());
+        newChatBtn.addEventListener("click", () => {
+            saveCurrentConversation();
+            clearConversation();
+        });
+        previewCardsBtn.addEventListener("click", renderPreviewConversation);
+
+        const charCountEl = document.getElementById("char-count");
+        const MAX_CHARS = 2000;
+
+        function updateCharCount() {
+            const len = messageInput.value.length;
+            charCountEl.textContent = `${len} / ${MAX_CHARS}`;
+            charCountEl.className = len > MAX_CHARS * 0.9 ? "char-count near-limit" : "char-count";
+        }
+
+        function autoResizeTextarea() {
+            messageInput.style.height = "auto";
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 200) + "px";
+        }
+
+        messageInput.addEventListener("input", () => {
+            updateCharCount();
+            autoResizeTextarea();
+        });
+
+        messageInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+                return;
+            }
+            if (event.key === "Escape") {
+                messageInput.value = "";
+                updateCharCount();
+                autoResizeTextarea();
+                messageInput.focus();
+                return;
+            }
+        });
+
+        document.querySelectorAll(".preset").forEach((button) => {
+            button.addEventListener("click", () => {
+                sendMessage(button.dataset.message);
+            });
+        });
+
+        clearConversation();
+        loadSuggestions();
+        renderConversationList();
+        initLiveReload();
+        initTheme();
+        initSoundToggle();
+        initSidebarToggle();
+        initScrollBottomButton();
+        initKeyboardShortcuts();
+
+        function initSidebarToggle() {
+            const toggle = document.getElementById("sidebar-toggle");
+            const sidebar = document.querySelector(".sidebar");
+            if (!toggle || !sidebar) return;
+            toggle.addEventListener("click", () => {
+                sidebar.classList.toggle("collapsed");
+                toggle.textContent = sidebar.classList.contains("collapsed") ? "☰ 展开菜单" : "☰ 菜单";
+            });
+        }
+
+        function initKeyboardShortcuts() {
+            document.addEventListener("keydown", (event) => {
+                if (event.ctrlKey && event.key === "k") {
+                    event.preventDefault();
+                    messageInput.focus();
+                    return;
+                }
+                if (event.ctrlKey && event.key === "n") {
+                    event.preventDefault();
+                    saveCurrentConversation();
+                    clearConversation();
+                    messageInput.focus();
+                    return;
+                }
+                if (event.ctrlKey && event.key === "Enter") {
+                    event.preventDefault();
+                    sendMessage();
+                    return;
+                }
+            });
+        }
+
+        function playCompletionSound() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const notes = [523.25, 659.25, 783.99];
+                notes.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.12, ctx.currentTime + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + i * 0.1);
+                    osc.stop(ctx.currentTime + i * 0.1 + 0.25);
+                });
+            } catch (_e) {}
+        }
+
+        function initSoundToggle() {
+            const toggle = document.getElementById("sound-toggle");
+            if (!toggle) return;
+            toggle.innerHTML = soundEnabled ? "🔔" : "🔕";
+            toggle.title = soundEnabled ? "提示音已开启" : "提示音已关闭";
+            toggle.addEventListener("click", () => {
+                soundEnabled = !soundEnabled;
+                localStorage.setItem("roomos-sound", soundEnabled ? "on" : "off");
+                toggle.innerHTML = soundEnabled ? "🔔" : "🔕";
+                toggle.title = soundEnabled ? "提示音已开启" : "提示音已关闭";
+            });
+        }
+
+        function initTheme() {
+            const toggle = document.getElementById("theme-toggle");
+            const stored = localStorage.getItem("roomos-theme");
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            const theme = stored || (prefersDark ? "dark" : "light");
+            applyTheme(theme);
+
+            toggle.addEventListener("click", () => {
+                const current = document.documentElement.getAttribute("data-theme") || "light";
+                const next = current === "dark" ? "light" : "dark";
+                applyTheme(next);
+                localStorage.setItem("roomos-theme", next);
+            });
+
+            window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+                if (!localStorage.getItem("roomos-theme")) {
+                    applyTheme(e.matches ? "dark" : "light");
+                }
+            });
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute("data-theme", theme);
+            const toggle = document.getElementById("theme-toggle");
+            if (toggle) {
+                toggle.innerHTML = theme === "dark" ? "☀️" : "🌓";
+                toggle.title = theme === "dark" ? "切换浅色模式" : "切换深色模式";
+            }
+        }
+    </script>
+</body>
+</html>

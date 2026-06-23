@@ -1,97 +1,98 @@
 <template>
   <div class="auth-page">
     <div class="auth-shell">
-      <div class="auth-left">
-        <div class="brand">
-          <div class="brand-title">FindMyBed</div>
-          <div class="brand-sub">一处完成预订、支付、运营，全角色通行</div>
+      <AuthShowcase
+        eyebrow="Account Access"
+        title="欢迎回来，继续你的入住与运营流程。"
+        description="登录后可直接查看订单、支付、房源状态与 AI 客服上下文，所有角色都在同一套入口体系里工作。"
+        :items="showcaseItems"
+      />
+
+      <section class="auth-panel app-section-card fade-rise">
+        <div class="auth-panel__header">
+          <p class="app-kicker">Sign in</p>
+          <h1>登录账号</h1>
+          <p>演示环境提供示例账号，点击下方标签即可快速填充。</p>
         </div>
-        <div class="bullets">
-          <div class="bullet"><el-icon><Check /></el-icon><span>便捷下单 · 智能分配房型</span></div>
-          <div class="bullet"><el-icon><Check /></el-icon><span>支付/退款留痕，可追踪、可回滚</span></div>
-          <div class="bullet"><el-icon><Check /></el-icon><span>多角色入口：用户 / 商户 / 管理员</span></div>
-        </div>
-      </div>
 
-      <div class="auth-right">
-        <el-card class="auth-card" shadow="hover">
-          <template #header>
-            <div class="card-title">欢迎登录</div>
-          </template>
+        <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="auth-form">
+          <el-form-item label="角色" prop="role">
+            <el-select v-model="form.role" placeholder="请选择角色" size="large">
+              <el-option label="普通用户" value="USER" />
+              <el-option label="商户" value="MERCHANT" />
+              <el-option label="管理员" value="ADMIN" />
+            </el-select>
+            <div class="helper">住客用于预订，商户用于管理房源，管理员拥有全局权限。</div>
+          </el-form-item>
 
-          <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-            <el-form-item label="角色" prop="role">
-              <el-select v-model="form.role" placeholder="请选择角色" size="large" style="width: 100%">
-                <el-option label="普通用户" value="USER" />
-                <el-option label="商户" value="MERCHANT" />
-                <el-option label="管理员" value="ADMIN" />
-              </el-select>
-              <div class="helper">用户用于预订，商户用于管理房源，管理员拥有全局管理权限</div>
-            </el-form-item>
+          <el-form-item label="用户名" prop="username">
+            <el-input v-model="form.username" size="large" placeholder="请输入用户名" :prefix-icon="User" />
+          </el-form-item>
 
-            <el-form-item label="用户名" prop="username">
-              <el-input v-model="form.username" size="large" placeholder="请输入用户名" :prefix-icon="User" />
-            </el-form-item>
-
-            <el-form-item label="密码" prop="password">
-              <el-input
-                v-model="form.password"
-                size="large"
-                type="password"
-                placeholder="请输入密码"
-                :prefix-icon="Lock"
-                show-password
-                @keyup.enter="onSubmit"
-              />
-            </el-form-item>
-
-            <el-button type="primary" size="large" :loading="loading" style="width: 100%" @click="onSubmit">
-              登录
-            </el-button>
-
-            <el-alert
-              v-if="error"
-              type="error"
-              :title="error"
-              show-icon
-              :closable="false"
-              style="margin-top: 12px"
+          <el-form-item label="密码" prop="password">
+            <el-input
+              v-model="form.password"
+              size="large"
+              type="password"
+              placeholder="请输入密码"
+              :prefix-icon="Lock"
+              show-password
+              @keyup.enter="onSubmit"
             />
-          </el-form>
+          </el-form-item>
 
-          <div class="divider">
-            <el-divider>示例账号</el-divider>
+          <el-button type="primary" size="large" :loading="loading" class="submit-btn" @click="onSubmit">
+            登录并继续
+          </el-button>
+
+          <el-alert
+            v-if="error"
+            type="error"
+            :title="error"
+            show-icon
+            :closable="false"
+            class="auth-alert"
+          />
+        </el-form>
+
+        <section class="demo-panel">
+          <div class="demo-panel__head">
+            <strong>示例账号</strong>
+            <span>点击即可填入表单</span>
           </div>
-          <div class="demo">
-            <el-tag
+          <div class="demo-tags">
+            <button
               v-for="acc in demoAccounts"
               :key="acc.username + acc.role"
+              type="button"
               class="demo-tag"
-              effect="plain"
               @click="fillAccount(acc)"
             >
               {{ roleText(acc.role) }} · {{ acc.username }} / {{ acc.password }}
-            </el-tag>
+            </button>
           </div>
+        </section>
 
-          <div class="footer">
-            <span>还没有账号？</span>
-            <router-link class="link" to="/register">立即注册</router-link>
-          </div>
-        </el-card>
-      </div>
+        <div class="auth-footer">
+          <span>还没有账号？</span>
+          <router-link class="auth-link" to="/register">立即注册</router-link>
+        </div>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup>
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Check, User, Lock } from '@element-plus/icons-vue'
+import { Check, User, Lock, Calendar, Tickets } from '@element-plus/icons-vue'
+import AuthShowcase from '../components/auth/AuthShowcase.vue'
 import { authApi } from '../api/auth'
+import { isAiCopilotPath, normalizeAiCopilotPath } from '../utils/aiCopilot'
 
 const router = useRouter()
+const route = useRoute()
 const formRef = ref(null)
 const loading = ref(false)
 const error = ref('')
@@ -107,6 +108,12 @@ const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
+
+const showcaseItems = [
+  { icon: Check, title: '统一身份进入', description: '登录后会自动恢复导航、订单和 AI 客服上下文。' },
+  { icon: Calendar, title: '预订流程不断裂', description: '用户可继续快速预订，商户可直接回到待处理事务。' },
+  { icon: Tickets, title: '多角色同入口', description: '住客、商户、管理员共用同一套温暖且清晰的界面语言。' }
+]
 
 const demoAccounts = [
   { role: 'USER', username: 'user1', password: 'password' },
@@ -138,12 +145,21 @@ const onSubmit = async () => {
     localStorage.setItem('user', JSON.stringify(data))
     window.dispatchEvent(new Event('user-changed'))
     ElMessage.success('登录成功')
-    if (data?.role === 'ADMIN') router.push('/admin')
-    else if (data?.role === 'USER') router.push('/simple-booking')
-    else router.push('/booking')
+    const redirect = route.query.redirect
+    if (typeof redirect === 'string' && isAiCopilotPath(redirect)) {
+      router.push(normalizeAiCopilotPath(redirect))
+    } else if (redirect) {
+      router.push(redirect)
+    } else if (data?.role === 'ADMIN') {
+      router.push('/admin')
+    } else if (data?.role === 'USER') {
+      router.push('/simple-booking')
+    } else {
+      router.push('/booking')
+    }
   } catch (err) {
     if (err !== false) {
-      error.value = err?.response?.data?.error || '登录失败，请检查账号/密码/角色'
+      error.value = err?.response?.data?.error || '登录失败，请检查账号、密码和角色。'
     }
   } finally {
     loading.value = false
@@ -153,112 +169,135 @@ const onSubmit = async () => {
 
 <style scoped>
 .auth-page {
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - 140px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 22px;
 }
+
 .auth-shell {
   width: 100%;
-  max-width: 1060px;
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 14px 50px rgba(0, 0, 0, 0.10);
-  overflow: hidden;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 0.95fr) minmax(360px, 0.8fr);
+  border-radius: 30px;
+  overflow: hidden;
+  box-shadow: var(--app-shadow-lg);
 }
-.auth-left {
-  padding: 56px 44px;
-  color: #fff;
-  background: linear-gradient(135deg, #0f7bff 0%, #5ec7ff 65%, #8de6ff 100%);
-}
-.brand-title {
-  font-size: 34px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-.brand-sub {
-  margin-top: 10px;
-  opacity: 0.92;
-  line-height: 1.6;
-}
-.bullets {
-  margin-top: 32px;
+
+.auth-panel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-}
-.bullet {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 15px;
-}
-.bullet .el-icon {
-  font-size: 18px;
-}
-.auth-right {
-  padding: 42px;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 20% 10%, #f0f7ff 0%, #fff 45%);
+  gap: 22px;
+  padding: 36px 34px;
+  border-radius: 0;
+  background: rgba(255, 253, 249, 0.96);
 }
-.auth-card {
+
+.auth-panel__header h1 {
+  margin: 10px 0 12px;
+  color: var(--app-text);
+  font-size: 32px;
+}
+
+.auth-panel__header p:last-child {
+  margin: 0;
+  color: var(--app-text-soft);
+  line-height: 1.7;
+}
+
+.auth-form {
+  display: grid;
+  gap: 6px;
+}
+
+.helper {
+  margin-top: 8px;
+  color: var(--app-text-faint);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.submit-btn {
   width: 100%;
-  max-width: 420px;
-  border: none;
+  margin-top: 6px;
 }
-.card-title {
-  text-align: center;
-  font-weight: 700;
-  font-size: 22px;
-  color: #111827;
+
+.auth-alert {
+  margin-top: 12px;
 }
-.divider {
-  margin-top: 18px;
+
+.demo-panel {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(246, 237, 229, 0.76);
+  border: 1px solid rgba(128, 93, 72, 0.12);
 }
-.demo {
+
+.demo-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.demo-panel__head strong {
+  color: var(--app-text);
+}
+
+.demo-panel__head span,
+.auth-footer span {
+  color: var(--app-text-soft);
+  font-size: 13px;
+}
+
+.demo-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  justify-content: center;
 }
+
 .demo-tag {
+  padding: 10px 12px;
+  border: 1px solid rgba(128, 93, 72, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--app-text);
   cursor: pointer;
+  transition: border-color var(--app-transition), transform var(--app-transition), color var(--app-transition);
 }
-.helper {
-  margin-top: 4px;
-  color: #909399;
-  font-size: 12px;
-  line-height: 1.4;
+
+.demo-tag:hover {
+  color: var(--app-primary-strong);
+  border-color: rgba(201, 134, 106, 0.36);
+  transform: translateY(-1px);
 }
-.footer {
-  margin-top: 18px;
+
+.auth-footer {
   text-align: center;
-  color: #6b7280;
-  font-size: 14px;
 }
-.link {
-  color: #0f7bff;
+
+.auth-link {
   margin-left: 6px;
+  color: var(--app-primary-strong);
+  font-weight: 700;
   text-decoration: none;
-  font-weight: 600;
 }
-.link:hover {
+
+.auth-link:hover {
   text-decoration: underline;
 }
+
 @media (max-width: 980px) {
   .auth-shell {
     grid-template-columns: 1fr;
   }
-  .auth-left {
-    display: none;
-  }
-  .auth-right {
-    padding: 24px;
+}
+
+@media (max-width: 768px) {
+  .auth-panel {
+    padding: 24px 20px;
   }
 }
 </style>

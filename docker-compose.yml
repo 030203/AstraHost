@@ -1,0 +1,145 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: roomos-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 456456
+      MYSQL_DATABASE: booking_system
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - roomos-mysql-data:/var/lib/mysql
+      - ./docs/booking_system.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p456456 --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: roomos-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - roomos-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: roomos-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - roomos-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+    container_name: roomos-elasticsearch
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - roomos-es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9200/_cluster/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        MAVEN_BUILD_IMAGE: ${MAVEN_BUILD_IMAGE:-maven:3.9-eclipse-temurin-17}
+        JAVA_RUNTIME_IMAGE: ${JAVA_RUNTIME_IMAGE:-eclipse-temurin:17-jre}
+    container_name: roomos-backend
+    environment:
+      ROOMOS_DB_URL: jdbc:mysql://mysql:3306/booking_system?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      ROOMOS_DB_USERNAME: root
+      ROOMOS_DB_PASSWORD: 456456
+      ROOMOS_REDIS_HOST: redis
+      ROOMOS_REDIS_PORT: 6379
+      ROOMOS_RABBITMQ_HOST: rabbitmq
+      ROOMOS_RABBITMQ_PORT: 5672
+      ROOMOS_ES_ENABLED: "true"
+      ROOMOS_ES_URIS: http://elasticsearch:9200
+      ROOMOS_JPA_SHOW_SQL: "false"
+      ROOMOS_BACKEND_LOG_LEVEL: INFO
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ./gateway
+      args:
+        MAVEN_BUILD_IMAGE: ${MAVEN_BUILD_IMAGE:-maven:3.9-eclipse-temurin-17}
+        JAVA_RUNTIME_IMAGE: ${JAVA_RUNTIME_IMAGE:-eclipse-temurin:17-jre}
+    container_name: roomos-gateway
+    environment:
+      ROOMOS_BOOKING_SERVICE_URI: http://backend:8080
+      AI_SERVICE_URL: ${AI_SERVICE_URL:-http://host.docker.internal:5001}
+      ROOMOS_GATEWAY_LOG_LEVEL: INFO
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "8088:8088"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NODE_BUILD_IMAGE: ${NODE_BUILD_IMAGE:-node:18}
+        NGINX_RUNTIME_IMAGE: ${NGINX_RUNTIME_IMAGE:-nginx:1.25-alpine}
+    container_name: roomos-frontend
+    depends_on:
+      gateway:
+        condition: service_started
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+volumes:
+  roomos-mysql-data:
+  roomos-redis-data:
+  roomos-rabbitmq-data:
+  roomos-es-data:
+  roomos-ai-data:

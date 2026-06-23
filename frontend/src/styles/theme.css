@@ -1,0 +1,295 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --app-bg: #fff8f1;
+  --app-bg-soft: #fffcf7;
+  --app-surface: rgba(255, 253, 249, 0.88);
+  --app-surface-strong: #fffdf9;
+  --app-surface-muted: #f6ede5;
+  --app-surface-accent: #f5e4d8;
+  --app-primary: #c9866a;
+  --app-primary-strong: #a85f47;
+  --app-primary-soft: rgba(201, 134, 106, 0.14);
+  --app-secondary: #d8a46f;
+  --app-success: #8ba48f;
+  --app-danger: #c96f5e;
+  --app-warning: #d6a45c;
+  --app-text: #3f312c;
+  --app-text-soft: #7d6d66;
+  --app-text-faint: #aa9890;
+  --app-line: rgba(128, 93, 72, 0.12);
+  --app-line-strong: rgba(128, 93, 72, 0.22);
+  --app-shadow-sm: 0 12px 30px rgba(114, 83, 60, 0.08);
+  --app-shadow-md: 0 22px 50px rgba(114, 83, 60, 0.12);
+  --app-shadow-lg: 0 30px 70px rgba(114, 83, 60, 0.16);
+  --app-radius-sm: 12px;
+  --app-radius-md: 18px;
+  --app-radius-lg: 26px;
+  --app-radius-xl: 32px;
+  --app-transition: 220ms ease;
+  --app-max-width: 1600px;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  color: var(--app-text);
+  background:
+    radial-gradient(circle at top left, rgba(255, 236, 220, 0.9), transparent 26%),
+    radial-gradient(circle at right 10% top 8%, rgba(226, 203, 173, 0.35), transparent 22%),
+    linear-gradient(180deg, #fffaf4 0%, #fff8f1 36%, #fffdf8 100%);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(201, 134, 106, 0.22);
+  color: var(--app-text);
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(201, 134, 106, 0.48);
+  outline-offset: 2px;
+}
+
+.app-section-card {
+  border-radius: var(--app-radius-lg);
+  border: 1px solid var(--app-line);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-sm);
+  backdrop-filter: blur(18px);
+}
+
+.app-grid-auto {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.app-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 134, 106, 0.18);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--app-text-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.app-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--app-primary-strong);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.app-link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--app-primary-strong);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.app-muted {
+  color: var(--app-text-soft);
+}
+
+.app-page-enter-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.app-page-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+}
+
+.app-page-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.app-page-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* Fast variant — for homepage, near-instant crossfade */
+.app-page-fast-enter-active {
+  transition: opacity 0.06s ease !important;
+}
+
+.app-page-fast-leave-active {
+  transition: opacity 0.06s ease !important;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+}
+
+.app-page-fast-enter-from,
+.app-page-fast-leave-to {
+  opacity: 0;
+}
+
+.soft-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, rgba(255, 247, 240, 0.8), rgba(245, 231, 221, 0.95), rgba(255, 247, 240, 0.8));
+  background-size: 200% 100%;
+  animation: soft-skeleton 1.4s linear infinite;
+}
+
+@keyframes soft-skeleton {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.fade-rise {
+  animation: fade-rise 560ms ease both;
+}
+
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.el-overlay-dialog {
+  backdrop-filter: blur(8px);
+}
+
+.el-card {
+  border-radius: var(--app-radius-md);
+}
+
+.el-button {
+  border-radius: 12px;
+  transition: transform var(--app-transition), box-shadow var(--app-transition), border-color var(--app-transition), background-color var(--app-transition);
+}
+
+.el-button:hover {
+  transform: translateY(-1px);
+}
+
+.el-button:active {
+  transform: translateY(0);
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--app-primary);
+  --el-button-border-color: var(--app-primary);
+  --el-button-hover-bg-color: var(--app-primary-strong);
+  --el-button-hover-border-color: var(--app-primary-strong);
+  --el-button-active-bg-color: var(--app-primary-strong);
+  --el-button-active-border-color: var(--app-primary-strong);
+  --el-button-disabled-bg-color: rgba(201, 134, 106, 0.45);
+  --el-button-disabled-border-color: rgba(201, 134, 106, 0.45);
+  box-shadow: 0 10px 22px rgba(168, 95, 71, 0.18);
+}
+
+.el-button--default,
+.el-button--primary.is-plain {
+  --el-button-bg-color: rgba(255, 255, 255, 0.72);
+  --el-button-border-color: rgba(128, 93, 72, 0.16);
+  --el-button-text-color: var(--app-text);
+  --el-button-hover-bg-color: #fff;
+  --el-button-hover-border-color: rgba(201, 134, 106, 0.4);
+  --el-button-hover-text-color: var(--app-primary-strong);
+}
+
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper,
+.el-date-editor.el-input__wrapper,
+.el-date-editor.el-range-editor {
+  border-radius: 14px !important;
+  box-shadow: 0 0 0 1px rgba(128, 93, 72, 0.08) inset !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+}
+
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-date-editor.el-input__wrapper.is-focus,
+.el-date-editor.el-range-editor.is-focus {
+  box-shadow:
+    0 0 0 1px rgba(201, 134, 106, 0.46) inset !important,
+    0 0 0 4px rgba(201, 134, 106, 0.08) !important;
+}
+
+.el-card,
+.el-table,
+.el-dialog,
+.el-dropdown-menu,
+.el-popover,
+.el-empty,
+.el-statistic,
+.el-calendar-table td.is-selected {
+  --el-fill-color-blank: #fffdf9;
+  --el-bg-color: #fffdf9;
+}
+
+.el-tag {
+  border-radius: 999px;
+}
+
+.el-message {
+  border-radius: 14px;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --app-radius-lg: 22px;
+    --app-radius-xl: 26px;
+  }
+}

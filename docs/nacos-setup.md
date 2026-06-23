@@ -89,10 +89,15 @@ $env:NACOS_ENABLED="true"
 $env:NACOS_DISCOVERY_ENABLED="true"
 $env:NACOS_CONFIG_ENABLED="true"
 $env:NACOS_SERVER_ADDR="127.0.0.1:8848"
-$env:MYSQL_PASSWORD="your-db-password"
 $env:REDIS_PASSWORD="your-redis-password"
 $env:DEEPSEEK_API_KEY="your-api-key"
 python app.py
+```
+
+Or use the helper script from the repo root:
+
+```powershell
+.\scripts\start-ai-service.ps1 -EnableNacos
 ```
 
 ## Verification

@@ -1,8 +1,12 @@
 package com.booking.system.controller;
 
 import com.booking.system.controller.dto.PropertyDetailResponse;
+import com.booking.system.controller.dto.PropertySearchReindexResponse;
+import com.booking.system.controller.dto.PropertySearchRequest;
+import com.booking.system.controller.dto.PropertySearchResponse;
 import com.booking.system.controller.dto.TopPropertyResponse;
 import com.booking.system.entity.Property;
+import com.booking.system.service.PropertySearchService;
 import com.booking.system.service.PropertyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +21,9 @@ public class PropertyController {
     
     @Autowired
     private PropertyService propertyService;
+
+    @Autowired
+    private PropertySearchService propertySearchService;
     
     @GetMapping
     public ResponseEntity<List<Property>> getAllProperties(
@@ -37,6 +44,16 @@ public class PropertyController {
             return ResponseEntity.ok(propertyService.getFeaturedProperties());
         }
         return ResponseEntity.ok(propertyService.getAllProperties());
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<PropertySearchResponse> searchProperties(@ModelAttribute PropertySearchRequest request) {
+        return ResponseEntity.ok(propertySearchService.search(request));
+    }
+
+    @PostMapping("/search/reindex")
+    public ResponseEntity<PropertySearchReindexResponse> reindexSearchIndex() {
+        return ResponseEntity.ok(propertySearchService.reindexAll());
     }
     
     @GetMapping("/{id}")

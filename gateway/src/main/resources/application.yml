@@ -6,6 +6,9 @@ spring:
     name: roomos-gateway
   cloud:
     nacos:
+      config:
+        import-check:
+          enabled: false
       discovery:
         enabled: false
     gateway:
@@ -38,6 +41,18 @@ spring:
             - Path=/ai-api/**
           filters:
             - StripPrefix=1
+        - id: ai-service-copilot
+          uri: ${roomos.route.ai-service-uri}
+          predicates:
+            - Path=/copilot,/copilot/**
+        - id: ai-service-static
+          uri: ${roomos.route.ai-service-uri}
+          predicates:
+            - Path=/static/copilot/**
+        - id: ai-service-root-assets
+          uri: ${roomos.route.ai-service-uri}
+          predicates:
+            - Path=/chat/**,/conversations/**,/suggestions/**,/skills/**,/__dev_reload__/**,/health/**
 
 management:
   endpoints:

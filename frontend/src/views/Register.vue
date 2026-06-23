@@ -1,121 +1,117 @@
 <template>
   <div class="auth-page">
     <div class="auth-shell">
-      <div class="auth-left">
-        <div class="brand">
-          <div class="brand-title">创建你的账号</div>
-          <div class="brand-sub">快速预订、支付与运营，从这里开始</div>
+      <AuthShowcase
+        eyebrow="Create Account"
+        title="把住客、商户和管理员都接进同一套工作空间。"
+        description="注册流程也统一切换到暖色设计语言。用户可以预订，商户可以管理房源，管理员可以查看平台全局。"
+        :items="showcaseItems"
+      />
+
+      <section class="auth-panel app-section-card fade-rise">
+        <div class="auth-panel__header">
+          <p class="app-kicker">Register</p>
+          <h1>创建账号</h1>
+          <p>根据角色显示必要字段，避免一次性暴露过多输入项。</p>
         </div>
-        <div class="tips">
-          <div class="tip"><el-icon><Check /></el-icon><span>普通用户：预订与支付</span></div>
-          <div class="tip"><el-icon><Check /></el-icon><span>商户：管理房源与订单</span></div>
-          <div class="tip"><el-icon><Check /></el-icon><span>管理员：查看全局数据</span></div>
-        </div>
-      </div>
 
-      <div class="auth-right">
-        <el-card class="auth-card" shadow="hover">
-          <template #header>
-            <div class="card-title">用户注册</div>
-          </template>
+        <el-form ref="formRef" :model="form" :rules="mergedRules" label-position="top" class="auth-form">
+          <el-form-item label="角色" prop="role">
+            <el-select v-model="form.role" placeholder="请选择角色" size="large">
+              <el-option label="普通用户" value="USER" />
+              <el-option label="商户" value="MERCHANT" />
+              <el-option label="管理员" value="ADMIN" />
+            </el-select>
+            <div class="helper">普通用户用于预订，商户可管理房源，管理员用于全局管理。</div>
+          </el-form-item>
 
-          <el-form ref="formRef" :model="form" :rules="mergedRules" label-position="top">
-            <el-form-item label="角色" prop="role">
-              <el-select v-model="form.role" placeholder="请选择角色" size="large" style="width: 100%">
-                <el-option label="普通用户" value="USER" />
-                <el-option label="商户" value="MERCHANT" />
-                <el-option label="管理员" value="ADMIN" />
-              </el-select>
-              <div class="helper">普通用户用于预订，商户可管理房源，管理员用于全局管理</div>
-            </el-form-item>
-
+          <div class="form-grid">
             <el-form-item label="用户名" prop="username">
-              <el-input
-                v-model="form.username"
-                size="large"
-                placeholder="3-20位，字母/数字/下划线"
-                :prefix-icon="User"
-              />
-            </el-form-item>
-
-            <el-form-item label="密码" prop="password">
-              <el-input
-                v-model="form.password"
-                size="large"
-                type="password"
-                placeholder="至少6位"
-                :prefix-icon="Lock"
-                show-password
-              />
-            </el-form-item>
-
-            <el-form-item label="确认密码" prop="confirmPassword">
-              <el-input
-                v-model="form.confirmPassword"
-                size="large"
-                type="password"
-                placeholder="再次输入密码"
-                :prefix-icon="Lock"
-                show-password
-              />
+              <el-input v-model="form.username" size="large" placeholder="3-20 位，字母/数字/下划线" :prefix-icon="User" />
             </el-form-item>
 
             <el-form-item label="邮箱（可选）" prop="email">
               <el-input v-model="form.email" size="large" placeholder="name@example.com" :prefix-icon="Message" />
             </el-form-item>
+          </div>
 
-            <el-form-item label="手机（可选）" prop="phone">
-              <el-input v-model="form.phone" size="large" placeholder="11位手机号" :prefix-icon="Phone" />
+          <div class="form-grid">
+            <el-form-item label="密码" prop="password">
+              <el-input v-model="form.password" size="large" type="password" placeholder="至少 6 位" :prefix-icon="Lock" show-password />
             </el-form-item>
 
-            <template v-if="form.role === 'MERCHANT'">
-              <el-divider>商户信息</el-divider>
+            <el-form-item label="确认密码" prop="confirmPassword">
+              <el-input v-model="form.confirmPassword" size="large" type="password" placeholder="再次输入密码" :prefix-icon="Lock" show-password />
+            </el-form-item>
+          </div>
+
+          <el-form-item label="手机（可选）" prop="phone">
+            <el-input v-model="form.phone" size="large" placeholder="11 位手机号" :prefix-icon="Phone" />
+          </el-form-item>
+
+          <section v-if="form.role === 'MERCHANT'" class="merchant-block">
+            <div class="merchant-block__head">
+              <strong>商户信息</strong>
+              <span>这些字段用于后续房源创建和审核。</span>
+            </div>
+
+            <div class="form-grid">
               <el-form-item label="商户名称" prop="merchantName">
-                <el-input v-model="form.merchantName" size="large" placeholder="公司/店铺名称" />
+                <el-input v-model="form.merchantName" size="large" placeholder="公司或店铺名称" />
               </el-form-item>
+
               <el-form-item label="联系人姓名" prop="merchantContactName">
                 <el-input v-model="form.merchantContactName" size="large" placeholder="联系人姓名" />
               </el-form-item>
+            </div>
+
+            <div class="form-grid">
               <el-form-item label="联系人电话" prop="merchantContactPhone">
                 <el-input v-model="form.merchantContactPhone" size="large" placeholder="联系人电话" />
               </el-form-item>
+
               <el-form-item label="联系人邮箱" prop="merchantContactEmail">
                 <el-input v-model="form.merchantContactEmail" size="large" placeholder="联系人邮箱（可选）" />
               </el-form-item>
-              <el-form-item label="所在省市" prop="merchantProvince">
-                <el-row :gutter="10">
-                  <el-col :span="12">
-                    <el-input v-model="form.merchantProvince" size="large" placeholder="省份" />
-                  </el-col>
-                  <el-col :span="12">
-                    <el-input v-model="form.merchantCity" size="large" placeholder="城市" />
-                  </el-col>
-                </el-row>
+            </div>
+
+            <div class="form-grid">
+              <el-form-item label="省份" prop="merchantProvince">
+                <el-input v-model="form.merchantProvince" size="large" placeholder="省份" />
               </el-form-item>
+
+              <el-form-item label="城市" prop="merchantCity">
+                <el-input v-model="form.merchantCity" size="large" placeholder="城市" />
+              </el-form-item>
+            </div>
+
+            <div class="form-grid">
               <el-form-item label="区县" prop="merchantDistrict">
                 <el-input v-model="form.merchantDistrict" size="large" placeholder="区县（可选）" />
               </el-form-item>
-              <el-form-item label="地址" prop="merchantAddress">
-                <el-input v-model="form.merchantAddress" size="large" placeholder="详细地址（可选）" />
-              </el-form-item>
+
               <el-form-item label="营业执照号" prop="businessLicense">
                 <el-input v-model="form.businessLicense" size="large" placeholder="营业执照号（可选）" />
               </el-form-item>
-            </template>
+            </div>
 
-            <el-button type="primary" size="large" :loading="loading" style="width: 100%" @click="onSubmit">
-              立即注册
-            </el-button>
+            <el-form-item label="详细地址" prop="merchantAddress">
+              <el-input v-model="form.merchantAddress" size="large" placeholder="详细地址（可选）" />
+            </el-form-item>
+          </section>
 
-            <el-alert v-if="error" type="error" :title="error" show-icon :closable="false" style="margin-top: 12px" />
-          </el-form>
+          <el-button type="primary" size="large" :loading="loading" class="submit-btn" @click="onSubmit">
+            创建账号
+          </el-button>
 
-          <div class="footer">
-            <span>已有账号？</span>
-            <router-link class="link" to="/login">立即登录</router-link>
-          </div>
-        </el-card>
-      </div>
+          <el-alert v-if="error" type="error" :title="error" show-icon :closable="false" class="auth-alert" />
+        </el-form>
+
+        <div class="auth-footer">
+          <span>已有账号？</span>
+          <router-link class="auth-link" to="/login">立即登录</router-link>
+        </div>
+      </section>
     </div>
   </div>
 </template>
@@ -124,7 +120,8 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Check, User, Lock, Message, Phone } from '@element-plus/icons-vue'
+import { Check, User, Lock, Message, Phone, House } from '@element-plus/icons-vue'
+import AuthShowcase from '../components/auth/AuthShowcase.vue'
 import { authApi } from '../api/auth'
 
 const router = useRouter()
@@ -150,6 +147,12 @@ const form = reactive({
   businessLicense: ''
 })
 
+const showcaseItems = [
+  { icon: Check, title: '角色分层清楚', description: '先选角色，再按需展示字段，减少一次性输入负担。' },
+  { icon: House, title: '商户信息独立分组', description: '商户注册时额外信息收束在单独区块里，更好扫描。' },
+  { icon: User, title: '注册后直接进入流程', description: '账号建立完成后可以立刻回到登录并进入对应业务页面。' }
+]
+
 const validateConfirm = (rule, value, callback) => {
   if (value !== form.password) callback(new Error('两次输入的密码不一致'))
   else callback()
@@ -172,7 +175,7 @@ const baseRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 3, max: 20, message: '长度 3-20 位', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_]+$/, message: '仅支持字母数字/下划线', trigger: 'blur' }
+    { pattern: /^[a-zA-Z0-9_]+$/, message: '仅支持字母数字和下划线', trigger: 'blur' }
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
@@ -225,7 +228,7 @@ const onSubmit = async () => {
     setTimeout(() => router.push('/login'), 800)
   } catch (err) {
     if (err !== false) {
-      error.value = err?.response?.data?.error || '注册失败，请检查输入'
+      error.value = err?.response?.data?.error || '注册失败，请检查输入。'
     }
   } finally {
     loading.value = false
@@ -235,100 +238,127 @@ const onSubmit = async () => {
 
 <style scoped>
 .auth-page {
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - 140px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 22px;
 }
+
 .auth-shell {
   width: 100%;
-  max-width: 1060px;
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 14px 50px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 0.95fr) minmax(420px, 0.95fr);
+  border-radius: 30px;
+  overflow: hidden;
+  box-shadow: var(--app-shadow-lg);
 }
-.auth-left {
-  padding: 56px 44px;
-  color: #fff;
-  background: linear-gradient(135deg, #16b364 0%, #3dd6a5 55%, #8de6ff 100%);
-}
-.brand-title {
-  font-size: 34px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-.brand-sub {
-  margin-top: 10px;
-  opacity: 0.92;
-  line-height: 1.6;
-}
-.tips {
-  margin-top: 32px;
+
+.auth-panel {
   display: flex;
   flex-direction: column;
+  gap: 22px;
+  padding: 32px 34px;
+  border-radius: 0;
+  background: rgba(255, 253, 249, 0.96);
+}
+
+.auth-panel__header h1 {
+  margin: 10px 0 12px;
+  font-size: 32px;
+}
+
+.auth-panel__header p:last-child {
+  margin: 0;
+  color: var(--app-text-soft);
+  line-height: 1.7;
+}
+
+.auth-form {
+  display: grid;
+  gap: 6px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
-.tip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 15px;
-}
-.tip .el-icon {
-  font-size: 18px;
-}
+
 .helper {
-  margin-top: 4px;
-  color: #909399;
+  margin-top: 8px;
+  color: var(--app-text-faint);
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.6;
 }
-.auth-right {
-  padding: 42px;
+
+.merchant-block {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(246, 237, 229, 0.76);
+  border: 1px solid rgba(128, 93, 72, 0.12);
+}
+
+.merchant-block__head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle at 20% 10%, #f0fff7 0%, #fff 50%);
+  justify-content: space-between;
+  gap: 12px;
 }
-.auth-card {
+
+.merchant-block__head strong {
+  color: var(--app-text);
+}
+
+.merchant-block__head span,
+.auth-footer span {
+  color: var(--app-text-soft);
+  font-size: 13px;
+}
+
+.submit-btn {
   width: 100%;
-  max-width: 420px;
-  border: none;
+  margin-top: 4px;
 }
-.card-title {
+
+.auth-alert {
+  margin-top: 12px;
+}
+
+.auth-footer {
   text-align: center;
-  font-weight: 700;
-  font-size: 22px;
-  color: #111827;
 }
-.footer {
-  margin-top: 18px;
-  text-align: center;
-  color: #6b7280;
-  font-size: 14px;
-}
-.link {
-  color: #16b364;
+
+.auth-link {
   margin-left: 6px;
+  color: var(--app-primary-strong);
+  font-weight: 700;
   text-decoration: none;
-  font-weight: 600;
 }
-.link:hover {
+
+.auth-link:hover {
   text-decoration: underline;
 }
-@media (max-width: 980px) {
+
+@media (max-width: 1100px) {
   .auth-shell {
     grid-template-columns: 1fr;
   }
-  .auth-left {
-    display: none;
+}
+
+@media (max-width: 768px) {
+  .auth-panel {
+    padding: 24px 20px;
   }
-  .auth-right {
-    padding: 24px;
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .merchant-block__head {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>

@@ -89,8 +89,11 @@ public class BookingService {
     @Transactional
     public Booking createBooking(Booking booking) {
         RoomType roomType = prepareBookingForSave(booking);
+        // 创建分布式锁及相应的事务处理
         Booking saved = saveBookingWithInventoryGuard(booking, roomType, null);
+        // 清空redis热点数据缓存
         propertyCacheService.clearTopProperties();
+        // 创建消息队列
         publishBookingCreatedAfterCommit(saved);
         return saved;
     }

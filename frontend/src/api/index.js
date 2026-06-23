@@ -33,6 +33,22 @@ api.interceptors.request.use(
   }
 )
 
+assistantClient.interceptors.request.use(
+  config => {
+    const user = localStorage.getItem('user')
+    if (user) {
+      const userData = JSON.parse(user)
+      if (userData.token) {
+        config.headers.Authorization = `Bearer ${userData.token}`
+      }
+    }
+    return config
+  },
+  error => {
+    return Promise.reject(error)
+  }
+)
+
 // 响应拦截器 - 处理错误
 api.interceptors.response.use(
   response => response,
@@ -69,6 +85,8 @@ export const merchantApi = {
 // 民宿相关API
 export const propertyApi = {
   getList: (params) => api.get('/properties', { params }),
+  search: (params) => api.get('/properties/search', { params }),
+  reindexSearch: () => api.post('/properties/search/reindex'),
   getById: (id) => api.get(`/properties/${id}`),
   getDetail: (id) => api.get(`/properties/${id}/detail`),
   getTop: (limit = 5) => api.get('/properties/top', { params: { limit } }),
@@ -141,6 +159,9 @@ export const couponApi = {
 }
 
 export const assistantApi = {
+  getConversations: () => assistantClient.get('/conversations'),
+  getConversationMessages: (conversationId) =>
+    assistantClient.get(`/conversations/${encodeURIComponent(conversationId)}/messages`),
   getSuggestions: () => assistantClient.get('/suggestions'),
   chat: (data) => assistantClient.post('/chat', data)
 }

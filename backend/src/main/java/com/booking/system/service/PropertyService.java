@@ -37,6 +37,9 @@ public class PropertyService {
     @Autowired
     private BookingRepository bookingRepository;
 
+    @Autowired
+    private PropertySearchService propertySearchService;
+
     public List<Property> getAllProperties() {
         return propertyRepository.findAll();
     }
@@ -136,7 +139,9 @@ public class PropertyService {
         }
         property.setCreatedAt(LocalDateTime.now());
         property.setUpdatedAt(LocalDateTime.now());
-        return propertyRepository.save(property);
+        Property saved = propertyRepository.save(property);
+        propertySearchService.syncProperty(saved);
+        return saved;
     }
 
     @Caching(evict = {
@@ -148,7 +153,9 @@ public class PropertyService {
     public Property updateProperty(Long id, Property property) {
         property.setId(id);
         property.setUpdatedAt(LocalDateTime.now());
-        return propertyRepository.save(property);
+        Property saved = propertyRepository.save(property);
+        propertySearchService.syncProperty(saved);
+        return saved;
     }
 
     @Caching(evict = {
@@ -162,7 +169,9 @@ public class PropertyService {
                 .orElseThrow(() -> new RuntimeException("民宿不存在"));
         property.setStatus(status);
         property.setUpdatedAt(LocalDateTime.now());
-        return propertyRepository.save(property);
+        Property saved = propertyRepository.save(property);
+        propertySearchService.syncProperty(saved);
+        return saved;
     }
 
     @Caching(evict = {
@@ -173,5 +182,6 @@ public class PropertyService {
     @Transactional
     public void deleteProperty(Long id) {
         propertyRepository.deleteById(id);
+        propertySearchService.removeProperty(id);
     }
 }
